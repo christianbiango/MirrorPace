@@ -2,9 +2,11 @@ from pathlib import Path
 
 from src.database.connection import build_engine, build_session
 from src.database.repository import ActivityRepository
+from src.ingestion.csv_enricher import load_enrichments
 from src.ingestion.importer import import_directory
 
 STRAVA_DIR = Path("data/raw/strava/export_151936996/activities")
+CSV_PATH = STRAVA_DIR.parent / "activities.csv"
 
 
 def on_event(status: str, file: Path, detail: str) -> None:
@@ -18,12 +20,17 @@ def main() -> None:
         print(f"Directory not found: {STRAVA_DIR}")
         return
 
+    enrichments = None
+    if CSV_PATH.exists():
+        enrichments = load_enrichments(CSV_PATH)
+        print(f"Loaded enrichments from {CSV_PATH.name} ({len(enrichments)} entries)\n")
+
     engine = build_engine()
     session = build_session(engine)
     repo = ActivityRepository(session)
 
     print(f"Importing from {STRAVA_DIR} ...\n")
-    result = import_directory(STRAVA_DIR, repo, on_event=on_event)
+    result = import_directory(STRAVA_DIR, repo, enrichments=enrichments, on_event=on_event)
 
     print(f"\n{result.summary()}")
 

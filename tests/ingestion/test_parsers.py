@@ -5,27 +5,27 @@ from pathlib import Path
 
 import pytest
 
-from src.domain.activity import Activity, ActivityMetrics, PhysiologyMetrics
+from src.domain.activity import Activity, ActivityMetrics
 from src.ingestion.fit_parser import parse_fit
 from src.ingestion.gpx_parser import parse_gpx
 from src.ingestion.parser import parse, is_activity_file
 
-FIT_FILE = Path("data/raw/strava/fit/20398531112.fit")
-GPX_FILE = Path("data/raw/strava/gpx/18286260719.gpx")
+FIT_FILE = Path("data/raw/strava/export_151936996/activities/20398531112.fit.gz")
+GPX_FILE = Path("data/raw/strava/export_151936996/activities/18286260719.gpx.gz")
 
 
 @pytest.fixture
-def fit_gz(tmp_path) -> Path:
-    dest = tmp_path / "20398531112.fit.gz"
-    with open(FIT_FILE, "rb") as f_in, gzip.open(dest, "wb") as f_out:
+def fit_plain(tmp_path) -> Path:
+    dest = tmp_path / "20398531112.fit"
+    with gzip.open(FIT_FILE, "rb") as f_in, open(dest, "wb") as f_out:
         shutil.copyfileobj(f_in, f_out)
     return dest
 
 
 @pytest.fixture
-def gpx_gz(tmp_path) -> Path:
-    dest = tmp_path / "18286260719.gpx.gz"
-    with open(GPX_FILE, "rb") as f_in, gzip.open(dest, "wb") as f_out:
+def gpx_plain(tmp_path) -> Path:
+    dest = tmp_path / "18286260719.gpx"
+    with gzip.open(GPX_FILE, "rb") as f_in, open(dest, "wb") as f_out:
         shutil.copyfileobj(f_in, f_out)
     return dest
 
@@ -57,16 +57,11 @@ class TestFitParser:
     def test_source_file_preserved(self):
         assert parse_fit(FIT_FILE).source_file == FIT_FILE
 
-
-class TestFitGzParser:
-    def test_returns_activity(self, fit_gz):
-        assert isinstance(parse_fit(fit_gz), Activity)
-
-    def test_same_distance_as_plain(self, fit_gz):
-        assert parse_fit(fit_gz).metrics.distance_m == parse_fit(FIT_FILE).metrics.distance_m
-
-    def test_same_date_as_plain(self, fit_gz):
-        assert parse_fit(fit_gz).date == parse_fit(FIT_FILE).date
+    def test_plain_fit_same_result(self, fit_plain):
+        gz = parse_fit(FIT_FILE)
+        plain = parse_fit(fit_plain)
+        assert plain.metrics.distance_m == gz.metrics.distance_m
+        assert plain.date == gz.date
 
 
 class TestGpxParser:
@@ -96,30 +91,25 @@ class TestGpxParser:
     def test_source_file_preserved(self):
         assert parse_gpx(GPX_FILE).source_file == GPX_FILE
 
-
-class TestGpxGzParser:
-    def test_returns_activity(self, gpx_gz):
-        assert isinstance(parse_gpx(gpx_gz), Activity)
-
-    def test_same_distance_as_plain(self, gpx_gz):
-        assert parse_gpx(gpx_gz).metrics.distance_m == parse_gpx(GPX_FILE).metrics.distance_m
-
-    def test_same_date_as_plain(self, gpx_gz):
-        assert parse_gpx(gpx_gz).date == parse_gpx(GPX_FILE).date
+    def test_plain_gpx_same_result(self, gpx_plain):
+        gz = parse_gpx(GPX_FILE)
+        plain = parse_gpx(gpx_plain)
+        assert plain.metrics.distance_m == gz.metrics.distance_m
+        assert plain.date == gz.date
 
 
 class TestDispatcher:
-    def test_routes_fit(self):
+    def test_routes_fit_gz(self):
         assert parse(FIT_FILE).source_type == "FIT"
 
-    def test_routes_gpx(self):
+    def test_routes_gpx_gz(self):
         assert parse(GPX_FILE).source_type == "GPX"
 
-    def test_routes_fit_gz(self, fit_gz):
-        assert parse(fit_gz).source_type == "FIT"
+    def test_routes_plain_fit(self, fit_plain):
+        assert parse(fit_plain).source_type == "FIT"
 
-    def test_routes_gpx_gz(self, gpx_gz):
-        assert parse(gpx_gz).source_type == "GPX"
+    def test_routes_plain_gpx(self, gpx_plain):
+        assert parse(gpx_plain).source_type == "GPX"
 
     def test_unsupported_format_raises(self):
         with pytest.raises(ValueError, match="Unsupported format"):

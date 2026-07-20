@@ -4,6 +4,7 @@ from typing import Callable
 
 from src.database.repository import ActivityRepository
 from src.domain.activity import Activity
+from src.ingestion.csv_enricher import ActivityEnrichment, apply_enrichment
 from src.ingestion.parser import parse, is_activity_file
 
 
@@ -28,6 +29,7 @@ class ImportResult:
 def import_directory(
     directory: Path,
     repo: ActivityRepository,
+    enrichments: dict[str, ActivityEnrichment] | None = None,
     on_event: Callable[[str, Path, str], None] | None = None,
 ) -> ImportResult:
     result = ImportResult()
@@ -44,6 +46,8 @@ def import_directory(
 
         try:
             activity = parse(file)
+            if enrichments and file.name in enrichments:
+                apply_enrichment(activity, enrichments[file.name])
             repo.save(activity)
             result.imported.append(file)
             if on_event:
