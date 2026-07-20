@@ -1,0 +1,91 @@
+from datetime import datetime, timezone
+from pathlib import Path
+
+import pytest
+
+from src.domain.activity import Activity, ActivityMetrics, PhysiologyMetrics
+from src.ingestion.fit_parser import parse_fit
+from src.ingestion.gpx_parser import parse_gpx
+from src.ingestion.parser import parse
+
+FIT_FILE = Path("data/raw/strava/fit/20398531112.fit")
+GPX_FILE = Path("data/raw/strava/gpx/18286260719.gpx")
+
+
+class TestFitParser:
+    def test_returns_activity(self):
+        assert isinstance(parse_fit(FIT_FILE), Activity)
+
+    def test_source_type(self):
+        assert parse_fit(FIT_FILE).source_type == "FIT"
+
+    def test_date_is_utc_aware(self):
+        activity = parse_fit(FIT_FILE)
+        assert isinstance(activity.date, datetime)
+        assert activity.date.tzinfo == timezone.utc
+
+    def test_distance_is_positive(self):
+        activity = parse_fit(FIT_FILE)
+        assert activity.metrics is not None
+        assert activity.metrics.distance_m is not None
+        assert activity.metrics.distance_m > 0
+
+    def test_duration_is_positive(self):
+        activity = parse_fit(FIT_FILE)
+        assert activity.metrics is not None
+        assert activity.metrics.duration_s is not None
+        assert activity.metrics.duration_s > 0
+
+    def test_source_file_preserved(self):
+        assert parse_fit(FIT_FILE).source_file == FIT_FILE
+
+
+class TestGpxParser:
+    def test_returns_activity(self):
+        assert isinstance(parse_gpx(GPX_FILE), Activity)
+
+    def test_source_type(self):
+        assert parse_gpx(GPX_FILE).source_type == "GPX"
+
+    def test_date_is_utc_aware(self):
+        activity = parse_gpx(GPX_FILE)
+        assert isinstance(activity.date, datetime)
+        assert activity.date.tzinfo == timezone.utc
+
+    def test_distance_is_positive(self):
+        activity = parse_gpx(GPX_FILE)
+        assert activity.metrics is not None
+        assert activity.metrics.distance_m is not None
+        assert activity.metrics.distance_m > 0
+
+    def test_duration_is_positive(self):
+        activity = parse_gpx(GPX_FILE)
+        assert activity.metrics is not None
+        assert activity.metrics.duration_s is not None
+        assert activity.metrics.duration_s > 0
+
+    def test_source_file_preserved(self):
+        assert parse_gpx(GPX_FILE).source_file == GPX_FILE
+
+
+class TestDispatcher:
+    def test_routes_fit(self):
+        assert parse(FIT_FILE).source_type == "FIT"
+
+    def test_routes_gpx(self):
+        assert parse(GPX_FILE).source_type == "GPX"
+
+    def test_unsupported_format_raises(self):
+        with pytest.raises(ValueError, match="Unsupported format"):
+            parse(Path("activity.csv"))
+
+
+class TestActivityMetricsPace:
+    def test_pace_computed_from_fit(self):
+        activity = parse_fit(FIT_FILE)
+        if activity.metrics and activity.metrics.distance_m and activity.metrics.duration_s:
+            assert activity.metrics.avg_pace_s_per_km > 0
+
+    def test_pace_none_when_no_distance(self):
+        metrics = ActivityMetrics(distance_m=None, duration_s=3600)
+        assert metrics.avg_pace_s_per_km is None

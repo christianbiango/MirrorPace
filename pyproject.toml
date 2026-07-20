@@ -1,0 +1,16 @@
+[project]
+name = "rag"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "fitparse>=1.2.0",
+    "gpxpy>=1.6.2",
+    "pandas>=3.0.3",
+    "pytest>=9.1.1",
+    "sqlalchemy>=2.0.51",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
