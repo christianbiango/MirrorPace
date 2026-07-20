@@ -1,4 +1,5 @@
 import gpxpy
+import gzip
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -14,8 +15,12 @@ def _to_utc(dt: datetime | None) -> datetime | None:
 
 
 def parse_gpx(file_path: Path) -> Activity:
-    with open(file_path, "r") as f:
-        gpx = gpxpy.parse(f)
+    if file_path.suffix.lower() == ".gz":
+        with gzip.open(file_path, "rt", encoding="utf-8") as f:
+            gpx = gpxpy.parse(f)
+    else:
+        with open(file_path, "r") as f:
+            gpx = gpxpy.parse(f)
 
     if not gpx.tracks:
         raise ValueError(f"No tracks found in {file_path}")

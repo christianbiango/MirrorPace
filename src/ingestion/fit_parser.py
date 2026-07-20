@@ -1,4 +1,6 @@
 import fitparse
+import gzip
+import io
 from datetime import timezone
 from pathlib import Path
 
@@ -6,7 +8,11 @@ from src.domain.activity import Activity, ActivityMetrics, PhysiologyMetrics
 
 
 def parse_fit(file_path: Path) -> Activity:
-    fitfile = fitparse.FitFile(str(file_path))
+    if file_path.suffix.lower() == ".gz":
+        with gzip.open(file_path, "rb") as f:
+            fitfile = fitparse.FitFile(io.BytesIO(f.read()))
+    else:
+        fitfile = fitparse.FitFile(str(file_path))
 
     for message in fitfile.get_messages("session"):
         data = {m.name: m.value for m in message}
