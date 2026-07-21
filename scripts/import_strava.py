@@ -5,7 +5,7 @@ from src.database.repository import ActivityRepository
 from src.ingestion.csv_enricher import load_enrichments
 from src.ingestion.importer import import_directory
 
-STRAVA_DIR = Path("data/raw/strava/export_151936996/activities")
+STRAVA_DIR = Path("data/raw/strava/export_151936996_strava/activities")
 CSV_PATH = STRAVA_DIR.parent / "activities.csv"
 
 
