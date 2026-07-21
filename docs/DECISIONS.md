@@ -349,3 +349,95 @@ Le protocole `VectorStore` est déjà en place — swapper vers un embedding sto
 une substitution sans impact sur le reste du pipeline.
 
 Status: Valide jusqu'à ~200 entrées ou besoin de recherche sémantique avérée
+
+---
+
+# Decision 016
+
+Date: 2026-07-22
+
+Topic: Coach Agent V1 — IntentClassifier hybride (patterns + LLM fallback)
+
+Decision:
+
+L'`IntentClassifier` utilise une première passe déterministe (regex sur texte normalisé),
+et ne fait appel au LLM que si l'intention est ambiguë (0 ou plusieurs catégories matchées).
+
+Règle de routage :
+- Exactement 1 catégorie matche → intent retourné, confidence="high", method="pattern"
+- 0 ou 2+ catégories matchent → appel LLM avec prompt contraint → {"intent": "..."}
+- LLM absent → fallback GENERAL_QUESTION, confidence="low"
+
+L'interface `IntentClassifier.classify()` est unique — l'implémentation interne peut
+être swappée sans toucher aux handlers ou à l'agent.
+
+Reason:
+
+Un appel LLM systématique par turn pour la classification seule est disproportionné
+pour un usage CLI mono-athlète. Les patterns couvrent les cas courants (~80%) avec
+latence nulle. Le fallback LLM gère les formulations ambiguës sans maintenir une liste
+de patterns exhaustive.
+
+Status: Permanent jusqu'à besoin de classification multilingue ou domaine élargi
+
+---
+
+# Decision 017
+
+Date: 2026-07-22
+
+Topic: Coach Agent V1 — FeedbackEntry lié à decision_ref dès V1
+
+Decision:
+
+`FeedbackEntry` capture `decision_ref` (SHA256[:12] de l'envelope KE) au moment
+où le feedback est reçu. Stocké dans `data/memory/feedback.yaml`.
+
+```python
+@dataclass
+class FeedbackEntry:
+    id: str
+    runner_id: str
+    decision_ref: str | None   # None si aucune analyse en session
+    session_id: str
+    text: str
+    timestamp: str
+```
+
+Le `decision_ref` provient de `session.last_decision_record.decision_ref`,
+qui est l'identifiant stable de la décision KE ayant produit la recommandation.
+
+Reason:
+
+Un feedback sans ancrage décisionnel est inutile pour la traçabilité longitudinale.
+La question "pourquoi le coureur a abandonné la semaine après une décision slight_increase ?"
+ne peut être répondue qu'en liant le feedback à la décision exacte du système.
+Le lien est établi dès V1 même si le traitement du feedback est différé à V2.
+
+Status: Permanent
+
+---
+
+# Decision 018
+
+Date: 2026-07-22
+
+Topic: Coach Agent V1 — FollowupHandler query directe sur InMemoryVectorStore
+
+Decision:
+
+Le `FollowupHandler` accède à la mémoire via `build_runner_context_store()` +
+`InMemoryVectorStore.query(text, k)` directement, sans passer par `RunnerContextRetriever`.
+
+Reason:
+
+`RunnerContextRetriever.retrieve()` prend un `InterpretedDecision` comme paramètre
+de query (construit à partir d'un `DecisionEnvelope`). Les follow-ups arrivent
+après la phase d'analyse : relancer l'interprétation juste pour une query mémoire
+serait un couplage inutile.
+
+L'`InMemoryVectorStore` expose `query(text, k)` directement, ce qui suffit
+pour une recherche par tokens sur le message utilisateur.
+
+Status: Permanent V1. Si besoin de sémantique avancée → implémenter un QueryBuilder
+dédié qui construit la query depuis un message libre.

@@ -13,7 +13,7 @@ class GeminiLLMClient:
         self,
         api_key: str | None = None,
         model: str = _DEFAULT_MODEL,
-        max_tokens: int = 1024,
+        max_tokens: int = 3000,
     ) -> None:
         self._client = genai.Client(api_key=api_key)
         self.model = model

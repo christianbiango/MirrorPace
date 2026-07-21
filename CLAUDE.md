@@ -65,7 +65,7 @@ Do not skip layers.
 
 # Completed Layers
 
-All layers up to and including Coach Intelligence are implemented and tested (336 tests).
+All layers up to and including Coach Agent V1 are implemented and tested (398 tests).
 
 - **Data Engine** — parsing FIT/GPX, normalisation Activity, SQLite via ActivityRepository
 - **Activity Intelligence** — classifier intensité, pace trends, personal bests
@@ -74,6 +74,9 @@ All layers up to and including Coach Intelligence are implemented and tested (33
 - **Knowledge Engine** — ACWR, readiness score, règles P0–P4, DecisionEnvelope — gelé v1.3.1
 - **Coach Intelligence v1.0.1** — EnvelopeInterpreter, RunnerPersonalizer, ScientificRetriever (13 entrées KB),
   RunnerContextRetriever, ReasoningContextBuilder, PromptBuilder, ResponseAssembler, SafetyGuard, FeedbackCollector
+- **Runner Memory** — CoachingDecision + RunnerEvent, MemoryStore YAML, MemoryWriter (branché sur DecisionEnvelope)
+- **Coach Agent V1** — CoachAgent, IntentClassifier (hybride patterns/LLM), AnalysisHandler, FollowupHandler,
+  FeedbackHandler (avec decision_ref), SessionStore, FeedbackStore, scripts/run_agent.py
 
 ---
 
@@ -94,19 +97,19 @@ All layers up to and including Coach Intelligence are implemented and tested (33
 
 The project is currently in:
 
-Phase 6 — Pre-Coach Agent
+Phase 7 — Coach Agent V1 livré
 
-Completed: toutes les couches jusqu'à Coach Intelligence v1.0.1.
+Completed: toutes les couches jusqu'à Coach Agent V1 (398 tests verts).
 
 Current objective:
 
-Câbler le pipeline end-to-end sur les vraies données de l'athlète et implémenter le Coach Agent.
+Valider les conversations réelles via `scripts/run_agent.py`, puis itérer.
 
 Immediate next steps:
 
-1. Remplir `data/runner_profile.yaml` avec le profil réel de l'athlète
-2. Script `scripts/run_coach.py` — premier appel LLM réel sur les activités DB
-3. Appliquer les 4 patches de dette Coach Intelligence (voir DECISIONS.md D-009)
+1. Lancer `python scripts/run_agent.py` et tester les 4 intents sur données réelles
+2. Itérer sur Coach Intelligence — affiner le prompt sur 5-10 runs réels via eval_coach.py
+3. Alimenter la Runner Memory — renseigner les actual_outcome sur décisions passées
 4. Implémenter `src/coach_agent/` — couche conversationnelle et agentique
 
 ---
