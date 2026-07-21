@@ -5,6 +5,7 @@ import json
 import pytest
 
 from src.coach_intelligence.domain.schemas.coach_response import RawLLMResponse
+from src.coach_intelligence.domain.schemas.rag_results import ScientificSnippet
 from src.coach_intelligence.safety.safety_guard import SafetyGuard
 from src.coach_intelligence.interpreter.envelope_interpreter import EnvelopeInterpreter
 from src.coach_intelligence.personalizer.runner_personalizer import RunnerPersonalizer
@@ -44,7 +45,26 @@ def test_valid_json_parsed(guard):
     result = guard.apply(_make_raw(_VALID_JSON), ctx)
     assert result.decision_summary == "Réduire."
     assert result.main_message == "Message principal."
-    assert result.scientific_context == ["Source A."]
+    # scientific_context comes from RAG snippets, not the LLM JSON
+    assert result.scientific_context == []
+
+
+def test_scientific_context_from_rag_snippets(guard):
+    snippet = ScientificSnippet(
+        rule_id="RULE-001",
+        source="Bangsbo 1994",
+        claim="La surcharge progressive réduit le risque de blessure.",
+        explanation="Augmentation maximale de 10% par semaine.",
+        relevance=0.9,
+    )
+    env = make_envelope()
+    snap = make_snapshot()
+    state = make_state()
+    interp = EnvelopeInterpreter().interpret(env)
+    pers = RunnerPersonalizer().personalize(snap, state.profile, state.context)
+    ctx = ReasoningContextBuilder().build(interp, pers, [snippet], [])
+    result = guard.apply(_make_raw(_VALID_JSON), ctx)
+    assert result.scientific_context == ["La surcharge progressive réduit le risque de blessure."]
 
 
 def test_markdown_json_parsed(guard):

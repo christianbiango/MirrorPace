@@ -48,7 +48,7 @@ class SafetyGuard:
         return CoachResponse(
             decision_summary=parsed.get("decision_summary", ""),
             main_message=parsed.get("main_message", ""),
-            scientific_context=parsed.get("scientific_context", []),
+            scientific_context=[s.claim for s in context.scientific_snippets],
             personal_context=parsed.get("personal_context", []),
             plan_hints_formatted=parsed.get("plan_hints_formatted", []),
             medical_alert=medical_alert,
@@ -82,9 +82,6 @@ def _parse_llm_response(text: str) -> dict:
 
 
 def _generate_ref(context: ReasoningContext) -> str:
-    key = (
-        f"{context.interpreted.action}:"
-        f"{context.interpreted.medical_flag}:"
-        f"{context.personalization.career_context}"
-    )
+    rule_ids = ":".join(sorted(context.interpreted.dominant_rule_ids))
+    key = f"{context.interpreted.action}:{context.interpreted.medical_flag}:{rule_ids}"
     return hashlib.sha256(key.encode()).hexdigest()[:12]

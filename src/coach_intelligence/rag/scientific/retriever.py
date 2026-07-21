@@ -6,11 +6,19 @@ from ...domain.schemas.rag_results import ScientificSnippet
 from .knowledge_base import SCIENTIFIC_ENTRIES
 
 _DEFAULT_K = 4
+_DEFAULT_STORE: InMemoryVectorStore | None = None
+
+
+def _get_default_store() -> InMemoryVectorStore:
+    global _DEFAULT_STORE
+    if _DEFAULT_STORE is None:
+        _DEFAULT_STORE = _build_default_store()
+    return _DEFAULT_STORE
 
 
 class ScientificRetriever:
     def __init__(self, store: VectorStore | None = None) -> None:
-        self._store: VectorStore = store if store is not None else _build_default_store()
+        self._store: VectorStore = store if store is not None else _get_default_store()
 
     def retrieve(
         self,
@@ -20,7 +28,6 @@ class ScientificRetriever:
     ) -> list[ScientificSnippet]:
         query_parts: list[str] = [
             interpreted.action,
-            interpreted.severity,
             interpreted.primary_reason,
             *interpreted.dominant_rule_ids,
         ]
