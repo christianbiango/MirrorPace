@@ -220,3 +220,132 @@ Le KE calcule ACWR = weekly_distance_km (acute) / mean(weekly_distance_history[:
 Inclure la semaine en cours dans l'historique doublerait le comptage de la charge aiguë.
 
 Status: Permanent
+
+---
+
+# Decision 011
+
+Date: 2026-07-22
+
+Topic: Runner Memory — format de stockage V1 (YAML, deux fichiers)
+
+Decision:
+
+La mémoire coureur est stockée dans deux fichiers YAML append-only :
+- `data/memory/decisions.yaml` — historique des décisions de coaching
+- `data/memory/events.yaml` — événements coureur (blessures, courses, arrêts)
+
+Chaque entrée a un `id` déterministe (SHA256[:12] des champs clés) qui garantit la déduplication :
+ajouter une entrée déjà existante est un no-op.
+
+Reason:
+
+Projet mono-athlète à ce stade. Peu d'entrées (quelques dizaines par an).
+YAML = human-readable, éditable directement, versionnable avec git.
+Cohérent avec `runner_profile.yaml` déjà en place.
+Une DB supplémentaire ou du JSON Lines apporterait de la complexité sans bénéfice réel.
+Le protocole `VectorStore` permet de remplacer le store par un embedding store plus tard sans toucher au reste.
+
+Status: Valide jusqu'à multi-athlète ou volume élevé d'entrées (alors → SQLite ou vector DB)
+
+---
+
+# Decision 012
+
+Date: 2026-07-22
+
+Topic: CoachingDecision — champs de contexte pour la traçabilité longitudinale
+
+Decision:
+
+`CoachingDecision` capture trois champs au-delà du résultat brut :
+
+- `decision_ref` : SHA256[:12] de `computed_at + action + readiness_score` — identifiant stable de l'envelope
+- `dominant_rules` : liste des rule_id déclenchés — les raisons déterministes de la décision
+- `key_metrics_snapshot` : snapshot des métriques au moment de la décision
+  (weekly_distance_km, previous_week_distance_km, readiness_score, readiness_confidence,
+  fatigue_score, sleep_quality_score, days_since_last_run, target_next_week_km, acwr si disponible)
+
+Reason:
+
+Une mémoire qui stocke uniquement l'action ("slight_increase") est inutile sans contexte.
+Dans 6 mois, il doit être possible de répondre à : "Pourquoi cette décision avait été prise ?"
+Les champs de contexte permettent de retrouver les conditions exactes sans relire la DB.
+
+Status: Permanent
+
+---
+
+# Decision 013
+
+Date: 2026-07-22
+
+Topic: MemoryWriter branché sur DecisionEnvelope, pas sur CoachResponse
+
+Decision:
+
+`MemoryWriter.record(envelope, state)` est appelé entre le Knowledge Engine et Coach Intelligence :
+
+```
+envelope = run_engine(state, config)
+MemoryWriter(store).record(envelope, state)   ← ici
+response = build_coach_response(envelope, ...)
+```
+
+La mémoire n'est pas alimentée après `build_coach_response()`.
+
+Reason:
+
+La mémoire doit enregistrer la décision du système (KE), pas la formulation du LLM.
+Si le LLM reformule ou atténue la recommandation, la mémoire reste fidèle à la décision réelle.
+Cela garantit aussi que la mémoire est alimentée même si l'appel LLM échoue.
+
+Status: Permanent
+
+---
+
+# Decision 014
+
+Date: 2026-07-22
+
+Topic: RunnerEvent manuel V1 — BehavioralPattern différé à V2
+
+Decision:
+
+En V1 :
+- `RunnerEvent` (blessures, courses, arrêts) = saisie manuelle dans `data/memory/events.yaml`
+- `BehavioralPattern` (ex : "réagit mal aux augmentations >10%") = non implémenté
+
+Reason:
+
+`RunnerEvent` nécessite une source externe (le coureur lui-même). Il n'existe pas encore
+de mécanisme d'input utilisateur (ce sera le Coach Agent). La saisie YAML directe est
+suffisante et sans risque pour la V1.
+
+`BehavioralPattern` est une donnée dérivée : elle n'est pertinente qu'après accumulation
+de plusieurs `CoachingDecision` avec `actual_outcome` renseigné. Le construire maintenant
+serait prématuré — aucune donnée ne l'alimente encore.
+
+Status: RunnerEvent manuel jusqu'au Coach Agent / BehavioralPattern différé à V2
+
+---
+
+# Decision 015
+
+Date: 2026-07-22
+
+Topic: Runner Memory RAG — Jaccard V1, embeddings différés
+
+Decision:
+
+`RunnerContextRetriever` utilise `InMemoryVectorStore` (Jaccard sur tokens) pour indexer
+les entrées mémoire, identique à `ScientificRetriever`.
+
+Reason:
+
+Pour ~50 entrées mémoire par an, la similarité sémantique par embeddings n'apporte pas
+de valeur mesurable par rapport à Jaccard sur les tokens clés (action, rule_ids, body_part, etc.).
+Le protocole `VectorStore` est déjà en place — swapper vers un embedding store est
+une substitution sans impact sur le reste du pipeline.
+
+Status: Valide jusqu'à ~200 entrées ou besoin de recherche sémantique avérée
