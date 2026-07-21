@@ -6,7 +6,7 @@ Usage:
 Requires:
     - data/mirrorpace.db populated (run scripts/import_strava.py first)
     - data/runner_profile.yaml filled
-    - .env file with OPENAI_API_KEY
+    - .env file with GEMINI_API_KEY
 """
 
 from __future__ import annotations
@@ -23,9 +23,13 @@ load_dotenv()
 
 from src.coach_intelligence.api import build_coach_response
 from src.coach_intelligence.llm.gemini_client import GeminiLLMClient
+from src.coach_intelligence.rag.context.retriever import RunnerContextRetriever
 from src.database.connection import build_engine, build_session
 from src.database.repository import ActivityRepository
 from src.knowledge_engine.api import load_default_config, run_engine
+from src.runner_memory.indexer import build_runner_context_store
+from src.runner_memory.store import MemoryStore
+from src.runner_memory.writer import MemoryWriter
 from src.runner_model.builder import build_snapshot
 from src.runner_model.profile_store import RunnerProfileStore
 from src.runner_model.state_builder import build_runner_state
@@ -78,10 +82,22 @@ def main() -> None:
     for r in triggered:
         print(f"       • [{r.rule_id}] {r.reason}")
 
+    # --- 4b. Record decision in Runner Memory ---
+    memory_store = MemoryStore()
+    decision_record = MemoryWriter(store=memory_store).record(envelope, state)
+    context_store = build_runner_context_store(runner_id, memory_store)
+    memory_count = len(memory_store.get_decisions(runner_id)) + len(memory_store.get_events(runner_id))
+    print(f"[4b]  Memory — {memory_count} entrée(s) indexées (décision {decision_record.id} enregistrée)")
+
     # --- 5. Build CoachResponse (LLM call) ---
     print("[5/5] Calling LLM …")
     llm = GeminiLLMClient(api_key=os.getenv("GEMINI_API_KEY"))
-    response = build_coach_response(envelope, snapshot, state, llm_client=llm)
+    context_retriever = RunnerContextRetriever(store=context_store)
+    response = build_coach_response(
+        envelope, snapshot, state,
+        llm_client=llm,
+        context_retriever=context_retriever,
+    )
 
     # --- Output ---
     print("\n" + "=" * 60)
