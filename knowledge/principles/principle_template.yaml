@@ -1,0 +1,34 @@
+# Template — Principe d'entraînement
+# Copier ce fichier dans le dossier de domaine correspondant.
+# Nommer le fichier : {domaine}_{nom_court}.yaml
+
+id:                   # identifiant unique, ex: training_load_progressive_overload
+name:                 # nom court du principe
+category:             # domaine : periodization | training_load | fatigue_recovery | ...
+
+description: |
+  # Description générale du principe.
+  # Ce que la littérature affirme sur ce sujet, sans transformation opérationnelle.
+
+origin_sources:
+  - # id de la source dans sources/ (ex: daniels_running_formula_2014)
+
+context: |
+  # Dans quel contexte ce principe s'applique-t-il ?
+  # Type de coureur, niveau d'expérience, phase de préparation, etc.
+
+variables:
+  - name:             # nom de la variable impliquée
+    description:      # rôle de cette variable dans le principe
+
+implications: |
+  # Ce que ce principe implique concrètement pour l'entraînement.
+  # Pas encore une règle — plutôt une direction générale.
+
+limitations: |
+  # Dans quels cas ce principe ne s'applique pas ou s'applique mal.
+
+exceptions:
+  - # cas particulier où le principe doit être nuancé ou ignoré
+
+confidence:           # high | medium | low

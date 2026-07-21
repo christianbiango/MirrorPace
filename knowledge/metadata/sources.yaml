@@ -1,0 +1,5 @@
+# Registre global des sources
+# Chaque source documentée dans sources/ doit être enregistrée ici.
+# Ce fichier sert d'index — il ne remplace pas les fichiers détaillés dans sources/.
+
+sources: []

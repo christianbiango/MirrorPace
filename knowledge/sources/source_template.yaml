@@ -1,0 +1,26 @@
+# Template — Source externe
+# Copier ce fichier dans le dossier correspondant au type de source.
+# Nommer le fichier : {auteur}_{titre_court}_{année}.yaml
+
+id:                   # identifiant unique, ex: daniels_running_formula_2014
+title:                # titre complet de la source
+author:               # auteur(s)
+year:                 # année de publication
+type:                 # book | scientific_paper | interview | video | article
+url:                  # lien si disponible
+domain:               # ex: training_load, fatigue_recovery, marathon_preparation
+credibility:          # peer_reviewed | expert_practitioner | community
+description: |
+  # Résumé objectif du contenu de la source.
+  # Ce que l'auteur affirme, sans interprétation.
+
+key_topics:
+  - # sujet principal
+  - # sujet secondaire
+
+extracted_principles:
+  - # identifiant du principe extrait de cette source (rempli après)
+
+notes: |
+  # Observations sur la source : biais potentiels, contexte de publication,
+  # limites identifiées, points de vigilance.

@@ -1,0 +1,41 @@
+# Template — Règle décisionnelle
+# Copier ce fichier dans le dossier de domaine correspondant.
+# Nommer le fichier : {domaine}_{nom_court}.yaml
+
+id:                   # identifiant unique, ex: volume_reduce_on_fatigue
+name:                 # nom court de la règle
+description: |
+  # Ce que cette règle cherche à détecter et à décider.
+
+conditions:
+  - variable:         # donnée mesurable (ex: fitness_trend, current_weekly_km)
+    operator:         # ex: equals, greater_than, less_than, increases_by
+    value:            # valeur seuil ou état attendu
+    source:           # d'où vient cette donnée (runner_model | analytics | activity_intelligence)
+
+inputs:
+  # Données nécessaires pour évaluer cette règle.
+  # Doit correspondre aux données disponibles dans le système.
+  - # ex: runner_model.fitness_trend
+  - # ex: analytics.current_weekly_km
+  - # ex: activity_intelligence.intensity_distribution
+
+decision: |
+  # Décision prise si toutes les conditions sont réunies.
+  # Formulée du point de vue du coach, en langage naturel.
+
+actions:
+  - # action concrète recommandée
+  - # action concrète recommandée
+
+exceptions:
+  - condition:        # situation dans laquelle la règle ne s'applique pas
+    reason:           # pourquoi
+
+supporting_principles:
+  - # id du principe dans principles/ qui fonde cette règle
+
+origin_sources:
+  - # id de la source dans sources/ (traçabilité complète)
+
+confidence:           # high | medium | low
