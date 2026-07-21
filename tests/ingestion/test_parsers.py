@@ -10,8 +10,8 @@ from src.ingestion.fit_parser import parse_fit
 from src.ingestion.gpx_parser import parse_gpx
 from src.ingestion.parser import parse, is_activity_file
 
-FIT_FILE = Path("data/raw/strava/export_151936996/activities/20398531112.fit.gz")
-GPX_FILE = Path("data/raw/strava/export_151936996/activities/18286260719.gpx.gz")
+FIT_FILE = Path("data/raw/strava/export_151936996_strava/activities/20398531112.fit.gz")
+GPX_FILE = Path("data/raw/strava/export_151936996_strava/activities/18286260719.gpx.gz")
 
 
 @pytest.fixture

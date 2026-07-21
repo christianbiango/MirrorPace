@@ -7,8 +7,8 @@ from src.database.connection import build_engine, build_session
 from src.database.repository import ActivityRepository
 from src.ingestion.importer import ImportResult, import_directory
 
-FIT_FILE = Path("data/raw/strava/export_151936996/activities/20398531112.fit.gz")
-GPX_FILE = Path("data/raw/strava/export_151936996/activities/18286260719.gpx.gz")
+FIT_FILE = Path("data/raw/strava/export_151936996_strava/activities/20398531112.fit.gz")
+GPX_FILE = Path("data/raw/strava/export_151936996_strava/activities/18286260719.gpx.gz")
 
 
 @pytest.fixture
