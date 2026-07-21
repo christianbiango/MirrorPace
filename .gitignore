@@ -8,6 +8,6 @@ wheels/
 
 # Virtual environments
 .venv
-
+.env*
 # Raw activity data — never commit personal GPS/fitness files
 data/
