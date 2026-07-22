@@ -60,9 +60,9 @@ _PATTERNS: dict[UserIntent, list[str]] = {
         r"\btrop (facile|difficile|dur)\b",
         r"\bdouleur\b",
         r"\bmal (au|a|aux)\b",
-        r"\bblessure\b",
-        r"\bbless[ei]\b",
-        r"\bfatigue\b",
+        r"\bma blessure\b",              # possessive: "ma blessure au genou"
+        r"\bblessure (au|a|aux|du)\b",   # body part: "blessure au mollet"
+        r"\bbless[ei]\b",                # "blessé", "blessée"
         r"\bepuise\b",
         r"\bj.ai fait.*km\b",
         r"\bfinalement.*km\b",
@@ -111,8 +111,12 @@ class IntentClassifier:
 
     def _classify_by_pattern(self, message: str) -> IntentClassification | None:
         normalized = _normalize(message)
+        is_question = "?" in message
         matches: dict[UserIntent, int] = {}
         for intent, patterns in _PATTERNS.items():
+            # A question is never feedback — feedback is declarative, past-tense
+            if is_question and intent == UserIntent.FEEDBACK:
+                continue
             count = sum(1 for p in patterns if re.search(p, normalized))
             if count > 0:
                 matches[intent] = count
