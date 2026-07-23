@@ -10,7 +10,7 @@ Usage:
 Requires:
     - data/mirrorpace.db populated
     - data/runner_profile.yaml filled
-    - .env with GEMINI_API_KEY and DEEPSEEK_API_KEY
+    - .env with GEMINI_API_KEY
 
 Cost guardrail: estimated cost is checked before any API call.
 Default budget: $0.50. Override with --budget.

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+
 from src.qa_agent.domain.schemas.conversation_log import ConversationLog
 from src.runner_memory.store import MemoryStore
 
@@ -47,7 +49,9 @@ def check_ke_coherence(log: ConversationLog) -> list[str]:
             continue
         response_lower = entry.agent_response.text.lower()
         for word in forbidden:
-            if word in response_lower:
+            # Use word-boundary match to avoid French substring false positives
+            # e.g. "reste" should not match signal word "rest"
+            if re.search(rf"\b{re.escape(word)}\b", response_lower):
                 failures.append(
                     f"ke_contradiction_turn_{entry.turn_number}: "
                     f"KE decided '{action}' but response contains '{word}'"

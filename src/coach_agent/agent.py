@@ -110,7 +110,12 @@ class CoachAgent:
     ):
         """Return (text, sources, coach_response)."""
         if intent == UserIntent.ANALYSIS_REQUEST:
-            return self._handle_analysis(session)
+            # First analysis of this session → run full KE pipeline
+            # Subsequent ANALYSIS_REQUESTs are follow-up questions about
+            # the existing recommendation (user correcting context, asking why, etc.)
+            if session.last_envelope is None:
+                return self._handle_analysis(session)
+            intent = UserIntent.EXPLANATION_REQUEST
 
         if intent == UserIntent.FEEDBACK:
             return self._handle_feedback(user_message, session)
