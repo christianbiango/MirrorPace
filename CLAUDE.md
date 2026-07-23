@@ -65,7 +65,7 @@ Do not skip layers.
 
 # Completed Layers
 
-All layers up to and including Coach Agent V1 are implemented and tested (398 tests).
+All layers up to and including QA Agent are implemented and tested (434 tests).
 
 - **Data Engine** — parsing FIT/GPX, normalisation Activity, SQLite via ActivityRepository
 - **Activity Intelligence** — classifier intensité, pace trends, personal bests
@@ -77,6 +77,9 @@ All layers up to and including Coach Agent V1 are implemented and tested (398 te
 - **Runner Memory** — CoachingDecision + RunnerEvent, MemoryStore YAML, MemoryWriter (branché sur DecisionEnvelope)
 - **Coach Agent V1** — CoachAgent, IntentClassifier (hybride patterns/LLM), AnalysisHandler, FollowupHandler,
   FeedbackHandler (avec decision_ref), SessionStore, FeedbackStore, scripts/run_agent.py
+- **QA Agent** — SimulatedRunner (Gemini 2.5 Flash), ConversationRunner, HardChecks (déterministes),
+  ConversationJudge (Gemini 2.5 Flash), ReportGenerator, 6 profils (anxious_beginner, ambitious_marathoner,
+  injured_runner, cautious_runner, busy_parent, performance_obsessed), scripts/run_qa.py
 
 ---
 
@@ -97,20 +100,47 @@ All layers up to and including Coach Agent V1 are implemented and tested (398 te
 
 The project is currently in:
 
-Phase 7 — Coach Agent V1 livré
+Phase 8 — QA conversationnel en cours
 
-Completed: toutes les couches jusqu'à Coach Agent V1 (398 tests verts).
+Completed: toutes les couches jusqu'à QA Agent (434 tests verts).
 
 Current objective:
 
-Valider les conversations réelles via `scripts/run_agent.py`, puis itérer.
+Atteindre les seuils MVP sur les 8 critères QA via des itérations sur Coach Intelligence.
 
-Immediate next steps:
+## État QA (2026-07-23)
 
-1. Lancer `python scripts/run_agent.py` et tester les 4 intents sur données réelles
-2. Itérer sur Coach Intelligence — affiner le prompt sur 5-10 runs réels via eval_coach.py
+5 conversations lancées. Score moyen : **6.96/10** (seuil MVP : 7.5).
+
+Résultats par profil :
+- anxious_beginner : 9.60/10 ✅
+- ambitious_marathoner : 8.04/10 ✅
+- injured_runner : 4.42/10 ❌
+- cautious_runner : 7.58/10 ✅
+- performance_obsessed : 5.18/10 ❌
+
+Détail complet : `data/qa_pipe/mvp_progress.md`
+Transcripts + rapports : `data/qa_pipe/pipe_20260722_231435.md`
+
+## Gaps produit connus (priorité V2 Coach Intelligence)
+
+1. **Règles KE non décrites** — le coach cite "RULE-009" sans expliquer son contenu en langage naturel.
+   Impacte : `pedagogical_quality` sur tous les profils.
+
+2. **Profil biographique vs charge récente** — le KE classe un coureur "débutant" selon sa charge
+   d'activité récente (11km/semaine), même si l'utilisateur déclare 8 ans d'expérience.
+   Le FollowupHandler reconnaît maintenant la discordance (fix appliqué) mais ne peut pas corriger
+   la classification. Fix complet : mécanisme de correction profil in-conversation.
+
+3. **Données brutes non exposées** — profils data-driven demandent HRV, score sommeil Garmin.
+   Le coach ne peut pas les fournir car ils ne remontent pas jusqu'au FollowupHandler.
+
+## Immediate next steps
+
+1. Itérer sur Coach Intelligence — ajouter descriptions lisibles des règles KE dans le prompt
+2. Lancer un nouveau pipe QA de 5 conversations pour mesurer l'impact
 3. Alimenter la Runner Memory — renseigner les actual_outcome sur décisions passées
-4. Implémenter `src/coach_agent/` — couche conversationnelle et agentique
+4. Mécanisme de correction profil in-conversation (moyen terme)
 
 ---
 
