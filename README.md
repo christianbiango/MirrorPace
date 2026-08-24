@@ -12,7 +12,9 @@ Not a chatbot over Strava data — a model that understands the athlete, follows
 
 Le Coach Agent V1 est livré et opérationnel. On valide maintenant la qualité des conversations en production via un QA Agent automatisé.
 
-Score QA courant : **6.96/10** moyenne (seuil MVP : 7.5) — voir `data/qa_pipe/mvp_progress.md`.
+Score QA courant : **8.11/10** moyenne (seuil MVP : 7.5, atteint mais variance élevée,
+2 profils encore sous le seuil) — voir `data/qa_pipe/mvp_progress.md` et CLAUDE.md
+pour le détail par profil et les correctifs en cours de validation.
 
 ---
 
@@ -57,7 +59,7 @@ cp .env.example .env
 
 ```bash
 uv run pytest
-# Attendu : 434 passed, 1 skipped
+# Attendu : 456 passed
 ```
 
 ---
@@ -182,16 +184,17 @@ Voir `docs/qa/README.md` pour la doc complète.
 
 ---
 
-## Layers implémentées (434 tests)
+## Layers implémentées (456 tests)
 
 - **Data Engine** — parsing FIT/GPX, normalisation Activity, SQLite
 - **Activity Intelligence** — classifier intensité, pace trends, personal bests
 - **Analytics** — weekly stats, progression slope
-- **Runner Model** — RunnerSnapshot, WeekInputBuilder, RunnerProfileStore
-- **Knowledge Engine** — ACWR, readiness score, règles P0–P4, DecisionEnvelope (gelé v1.3.1)
+- **Runner Model** — RunnerSnapshot, WeekInputBuilder, RunnerProfileStore (save/load)
+- **Knowledge Engine** — ACWR, readiness score, règles P0–P4, DecisionEnvelope (gelé v1.3.2)
 - **Coach Intelligence v1.0.1** — EnvelopeInterpreter, PersonalizedPromptBuilder, ResponseAssembler, SafetyGuard
 - **Runner Memory** — CoachingDecision, MemoryStore YAML, MemoryWriter
-- **Coach Agent V1** — IntentClassifier hybride, AnalysisHandler, FollowupHandler, FeedbackHandler
+- **Coach Agent V1** — IntentClassifier hybride, AnalysisHandler, FollowupHandler (correction de profil
+  in-conversation), FeedbackHandler
 - **QA Agent** — SimulatedRunner, ConversationRunner, HardChecks, ConversationJudge, 6 profils
 
 ---

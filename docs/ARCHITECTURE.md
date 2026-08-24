@@ -110,7 +110,8 @@ Question : "Quelle est la décision pour cette semaine ?"
 - Règles P0–P4 (safety, progression, planning, race day)
 - Produit un `DecisionEnvelope` : action, readiness, règles déclenchées, plan hints
 
-Gelé en v1.3.1. Ne change pas sans révision du spec.
+Gelé en v1.3.2. Ne change pas sans révision du spec (voir
+`docs/knowledge_engine/KB_IMPLEMENTATION_CONTRACT_V1.md`).
 
 ---
 
