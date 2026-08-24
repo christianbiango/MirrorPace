@@ -1,4 +1,4 @@
-"""DecisionEnvelope assembler — KB v1.2 §6.2 + v1.3 C-03 + v1.3.1 C-14."""
+"""DecisionEnvelope assembler — KB v1.2 §6.2 + v1.3 C-03 + v1.3.1 C-14 + v1.3.2 C-16."""
 
 from __future__ import annotations
 
@@ -147,4 +147,6 @@ def build_envelope(
             reasons_human_readable=reasons_hr,
             confidence_caveat=caveat,
         ),
+        experience_level=computed.experience_level,
+        experience_level_source=computed.experience_level_source,
     )

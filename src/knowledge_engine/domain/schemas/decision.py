@@ -1,4 +1,5 @@
-"""DecisionEnvelope — KB v1.2 §6.2 + v1.3 C-03 (medical_referral_reason)."""
+"""DecisionEnvelope — KB v1.2 §6.2 + v1.3 C-03 (medical_referral_reason) + v1.3.2 C-16
+(experience_level / experience_level_source)."""
 
 from __future__ import annotations
 
@@ -56,3 +57,5 @@ class DecisionEnvelope:
     medical_referral: bool = False
     medical_referral_reason: str | None = None  # v1.3 C-03 + v1.3.1 C-14
     llm_context: LlmContext = field(default_factory=LlmContext)
+    experience_level: str = "beginner"  # v1.3.2 C-16
+    experience_level_source: str = "declared"  # v1.3.2 C-16 — declared | calculated | reconciled

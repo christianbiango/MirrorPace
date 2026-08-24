@@ -38,6 +38,31 @@ def test_envelope_shape_defaults():
         "recovery", "load", "progression", "marathon_prep", "p3_adjustments"
     }
 
+    # v1.3.2 C-16 — experience level classification is surfaced, not discarded
+    assert env.experience_level in {"beginner", "intermediate", "advanced"}
+    assert env.experience_level_source in {"declared", "calculated", "reconciled"}
+
+
+def test_experience_level_source_calculated_when_declared_is_too_flattering():
+    """C-16: declaring 'advanced' with a chronic load below the advanced threshold
+    (default week ~45km/week, advanced requires >=60km) must be ignored — the KE
+    falls back to the calculated level and reports why."""
+    state = with_profile(make_state(), experience_level_declared="advanced")
+    env = run_engine(state, CFG)
+
+    assert env.experience_level_source == "calculated"
+    assert env.experience_level != "advanced"
+
+
+def test_experience_level_source_declared_when_declared_is_more_prudent():
+    """C-16: declaring 'beginner' when the calculated level would be higher must be
+    respected — the KE reports the declared level with source='declared'."""
+    state = with_profile(make_state(), experience_level_declared="beginner")
+    env = run_engine(state, CFG)
+
+    assert env.experience_level_source == "declared"
+    assert env.experience_level == "beginner"
+
 
 def test_p0_pain_critical_short_circuits_to_deload():
     """A single critical pain must deload and post medical_referral."""
