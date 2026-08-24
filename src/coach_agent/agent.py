@@ -165,7 +165,7 @@ class CoachAgent:
         session.last_decision_record = result.decision_record
 
         response = result.coach_response
-        text = _format_analysis_response(response)
+        text = _format_analysis_response(response, result.envelope)
         return text, [], response
 
     def _handle_feedback(self, user_message: str, session: ConversationSession):
@@ -185,7 +185,7 @@ class CoachAgent:
 
 # ── formatting ────────────────────────────────────────────────────────────────
 
-def _format_analysis_response(response) -> str:
+def _format_analysis_response(response, envelope=None) -> str:
     parts: list[str] = []
 
     if response.medical_alert:
@@ -198,7 +198,28 @@ def _format_analysis_response(response) -> str:
         hints = "\n".join(f"  • {h}" for h in response.plan_hints_formatted)
         parts.append(f"Plan suggéré :\n{hints}")
 
+    plan_detail = _format_plan_hints(envelope.plan_hints) if envelope else []
+    if plan_detail:
+        parts.append("Détail du plan (calculé) :\n" + "\n".join(plan_detail))
+
     if response.confidence_note:
         parts.append(f"Note : {response.confidence_note}")
 
     return "\n\n".join(parts)
+
+
+def _format_plan_hints(plan_hints) -> list[str]:
+    """Render P4 plan hints from real numbers (envelope.plan_hints[].params/.reason)
+    rather than letting the LLM paraphrase them — quantitative plan facts must be
+    exact, not reconstructed from memory by a generative model."""
+    lines: list[str] = []
+    for h in plan_hints:
+        if h.rule_id == "RULE-015" and "suggested_phases" in h.params:
+            p = h.params["suggested_phases"]
+            lines.append(
+                f"  • {h.reason} → {p['general']} sem. base, {p['specific']} sem. "
+                f"spécifique, {p['taper']} sem. affûtage"
+            )
+        elif h.reason:
+            lines.append(f"  • {h.reason}")
+    return lines
