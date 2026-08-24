@@ -16,8 +16,15 @@ from src.qa_agent.llm import QAGeminiClient
 
 
 class ConversationJudge:
-    def __init__(self, api_key: str) -> None:
-        self._client = QAGeminiClient(api_key=api_key)
+    def __init__(self, api_key: str | None = None, client=None) -> None:
+        """`client` (anything with the QAGeminiClient.generate signature) lets the
+        judge run on a different model family than the one being judged — pass
+        api_key alone for the default Gemini judge."""
+        if client is None:
+            if api_key is None:
+                raise ValueError("ConversationJudge requires either api_key or client")
+            client = QAGeminiClient(api_key=api_key)
+        self._client = client
         self._system_prompt = build_judge_system_prompt()
 
     def evaluate(
@@ -26,7 +33,23 @@ class ConversationJudge:
         hard_check_failures: list[str],
     ) -> EvaluationReport:
         user_prompt = _build_user_prompt(log, hard_check_failures)
+        return self.evaluate_raw(
+            conversation_id=log.conversation_id,
+            runner_profile_id=log.runner_profile.id,
+            user_prompt=user_prompt,
+            hard_check_failures=hard_check_failures,
+        )
 
+    def evaluate_raw(
+        self,
+        conversation_id: str,
+        runner_profile_id: str,
+        user_prompt: str,
+        hard_check_failures: list[str],
+    ) -> EvaluationReport:
+        """Same as `evaluate()`, but takes an already-built prompt — lets a
+        re-judge script score a conversation reconstructed from a stored log
+        without needing the live ConversationLog/DecisionEnvelope objects."""
         raw = self._client.generate(
             system_prompt=self._system_prompt,
             user_prompt=user_prompt,
@@ -42,8 +65,8 @@ class ConversationJudge:
         global_score = _compute_global_score(scores, hard_check_failures)
 
         return EvaluationReport(
-            conversation_id=log.conversation_id,
-            runner_profile_id=log.runner_profile.id,
+            conversation_id=conversation_id,
+            runner_profile_id=runner_profile_id,
             scores=scores,
             global_score=global_score,
             hard_check_failures=hard_check_failures,
