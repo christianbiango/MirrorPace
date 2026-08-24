@@ -129,3 +129,9 @@ def test_p4_macro_plan_hint_when_far_from_race():
     env = run_engine(state, CFG)
     hint_ids = {h.rule_id for h in env.plan_hints}
     assert "RULE-015" in hint_ids
+
+    # v1.3.3 C-17 — the rule's human-readable reason must survive onto PlanHint,
+    # not just the internal .hint code and the raw .params numbers.
+    macro_hint = next(h for h in env.plan_hints if h.rule_id == "RULE-015")
+    assert macro_hint.reason
+    assert "suggested_phases" in macro_hint.params

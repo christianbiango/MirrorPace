@@ -1,4 +1,5 @@
-"""DecisionEnvelope assembler — KB v1.2 §6.2 + v1.3 C-03 + v1.3.1 C-14 + v1.3.2 C-16."""
+"""DecisionEnvelope assembler — KB v1.2 §6.2 + v1.3 C-03 + v1.3.1 C-14 + v1.3.2 C-16
++ v1.3.3 C-17."""
 
 from __future__ import annotations
 
@@ -98,7 +99,12 @@ def build_envelope(
     for o in triggered:
         if o.plan_hint:
             plan_hints.append(
-                PlanHint(rule_id=o.rule_id, hint=o.plan_hint, params=dict(o.extras))
+                PlanHint(
+                    rule_id=o.rule_id,
+                    hint=o.plan_hint,
+                    params=dict(o.extras),
+                    reason=o.reason,
+                )
             )
 
     absolute_target = _compute_absolute_target(

@@ -1,5 +1,5 @@
 """DecisionEnvelope — KB v1.2 §6.2 + v1.3 C-03 (medical_referral_reason) + v1.3.2 C-16
-(experience_level / experience_level_source)."""
+(experience_level / experience_level_source) + v1.3.3 C-17 (PlanHint.reason)."""
 
 from __future__ import annotations
 
@@ -37,6 +37,7 @@ class PlanHint:
     rule_id: str
     hint: str
     params: dict[str, Any] = field(default_factory=dict)
+    reason: str = ""  # v1.3.3 C-17 — human-readable text, was computed then discarded
 
 
 @dataclass

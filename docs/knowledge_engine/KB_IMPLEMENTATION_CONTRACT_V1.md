@@ -11,15 +11,16 @@ La spec finale est composée de trois documents, à lire dans cet ordre :
 
 | Priorité | Document | Rôle | Lignes |
 |----------|----------|------|--------|
-| 4 (base) | `KB_CANONICAL_v1.2.md` | Spec complète — schémas, règles, formules, seuils, orchestration, garde-fous, décisions D-01 à D-20 | ~1500 |
-| 3 | `KB_CANONICAL_v1.3.md` | Patch correctif Red Team — 11 corrections, remplace les sections listées dans son §1 | ~400 |
-| 2 | `KB_CANONICAL_v1.3.1.md` | Patch de clarification pré-implémentation — 4 définitions machine, aucun changement métier | ~250 |
-| 1 (prime) | `KB_CANONICAL_v1.3.2.md` | Extension additive — expose `experience_level_source` dans `DecisionEnvelope`, aucun changement de calcul | ~40 |
+| 5 (base) | `KB_CANONICAL_v1.2.md` | Spec complète — schémas, règles, formules, seuils, orchestration, garde-fous, décisions D-01 à D-20 | ~1500 |
+| 4 | `KB_CANONICAL_v1.3.md` | Patch correctif Red Team — 11 corrections, remplace les sections listées dans son §1 | ~400 |
+| 3 | `KB_CANONICAL_v1.3.1.md` | Patch de clarification pré-implémentation — 4 définitions machine, aucun changement métier | ~250 |
+| 2 | `KB_CANONICAL_v1.3.2.md` | Extension additive — expose `experience_level_source` dans `DecisionEnvelope`, aucun changement de calcul | ~40 |
+| 1 (prime) | `KB_CANONICAL_v1.3.3.md` | Extension additive — expose `reason` sur `PlanHint`, aucun changement de calcul | ~40 |
 
 **En cas de conflit entre versions : la plus récente prime.**
 
 ```
-v1.3.2 > v1.3.1 > v1.3 > v1.2
+v1.3.3 > v1.3.2 > v1.3.1 > v1.3 > v1.2
 ```
 
 ---
@@ -74,6 +75,12 @@ Les éléments suivants **complètent** v1.2 et v1.3 sans les contredire :
 |-----------|--------|
 | C-16 — `experience_level`/`experience_level_source` dans `DecisionEnvelope` | Deux champs additifs, valeurs par défaut, aucun changement de calcul |
 
+### KB_CANONICAL_v1.3.3.md — appliquer l'extension
+
+| Extension | Ajoute |
+|-----------|--------|
+| C-17 — `reason` sur `PlanHint` | Un champ additif, valeur par défaut, aucun changement de calcul |
+
 ---
 
 ## Prompt d'implémentation
@@ -82,7 +89,8 @@ Lorsqu'on demande à un développeur ou un LLM d'implémenter le moteur, la form
 
 > "Implémente le moteur V1 conformément à `KB_IMPLEMENTATION_CONTRACT_V1.md` :
 > lire `KB_CANONICAL_v1.2.md` en intégralité, puis appliquer les overrides de `KB_CANONICAL_v1.3.md`,
-> puis appliquer les clarifications de `KB_CANONICAL_v1.3.1.md`, puis l'extension de `KB_CANONICAL_v1.3.2.md`."
+> puis appliquer les clarifications de `KB_CANONICAL_v1.3.1.md`, puis les extensions de
+> `KB_CANONICAL_v1.3.2.md` et `KB_CANONICAL_v1.3.3.md`."
 
 ---
 
