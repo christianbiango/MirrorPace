@@ -11,3 +11,6 @@ wheels/
 .env*
 # Raw activity data — never commit personal GPS/fitness files
 data/
+
+# macOS
+.DS_Store
