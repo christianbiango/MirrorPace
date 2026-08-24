@@ -89,9 +89,7 @@ def _build_prompt(
     envelope = session.last_envelope
     if envelope:
         triggered = [r for r in envelope.triggered_rules if r.triggered]
-        rules_str = "; ".join(
-            f"{r.rule_id}: {r.reason}" for r in triggered
-        ) or "aucune règle déclenchée"
+        rules_str = "; ".join(r.reason for r in triggered if r.reason) or "aucune règle déclenchée"
         parts.append(
             "DÉCISION SYSTÈME :\n"
             f"- Action : {envelope.decision.action}\n"

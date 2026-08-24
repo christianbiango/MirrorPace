@@ -70,7 +70,11 @@ class SimulatedRunner:
             system_prompt=system,
             user_prompt=user_prompt,
             temperature=0.8,
-            max_tokens=300,
+            # 300 was too tight for verbose personas (e.g. performance_obsessed
+            # writing argumentative multi-sentence rebuttals): the JSON got cut
+            # off mid-string, failed to parse, and the raw unclosed JSON leaked
+            # as the simulated runner's "message" straight into the transcript.
+            max_tokens=700,
         )
         try:
             data = json.loads(raw)

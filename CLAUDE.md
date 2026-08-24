@@ -108,39 +108,62 @@ Current objective:
 
 Atteindre les seuils MVP sur les 8 critères QA via des itérations sur Coach Intelligence.
 
-## État QA (2026-07-23)
+## État QA (2026-07-30)
 
-5 conversations lancées. Score moyen : **6.96/10** (seuil MVP : 7.5).
+Premier pipe QA sur données réelles (39 activités Strava importées, profil minimal
+runner_id=christian/age=23/sex=male). 8 conversations lancées (5 officielles + 3
+vérifications post-fix). Score moyen : **8.11/10** (seuil MVP : 7.5) — **seuil atteint**,
+avec variance élevée (σ≈1.99) et un résultat porté surtout par 3 bugs corrigés
+(voir ci-dessous), pas par une résolution des gaps produits connus.
 
 Résultats par profil :
-- anxious_beginner : 9.60/10 ✅
-- ambitious_marathoner : 8.04/10 ✅
-- injured_runner : 4.42/10 ❌
-- cautious_runner : 7.58/10 ✅
-- performance_obsessed : 5.18/10 ❌
+- anxious_beginner : 10.0/10 ✅ (était 9.60)
+- ambitious_marathoner : 4.66/10 ❌ (était 8.04 — chute due au gap #2, déclenché cette fois)
+- injured_runner : 7.4/10 ❌ proche seuil (était 4.42 — net progrès)
+- cautious_runner : 10.0/10 ✅ (était 7.58)
+- performance_obsessed : 8.48/10 ✅ (était 5.18 — net progrès)
 
 Détail complet : `data/qa_pipe/mvp_progress.md`
-Transcripts + rapports : `data/qa_pipe/pipe_20260722_231435.md`
+Transcripts + rapports : `data/qa_pipe/pipe_20260730_183347.md`
+
+### Bugs corrigés pendant ce pipe
+
+1. **Troncature JSON du coach** — les tokens de "thinking" de Gemini 2.5 Flash comptaient
+   dans `max_output_tokens`, tronquant parfois la réponse JSON en plein milieu (fuite de
+   JSON brut à l'utilisateur). Fix : `thinking_config=ThinkingConfig(thinking_budget=0)`
+   dans `src/coach_intelligence/llm/gemini_client.py`.
+2. **Troncature des messages du simulateur QA** pour personas verbeux (`max_tokens=300`
+   trop court). Fix : porté à 700 dans `src/qa_agent/simulation/simulated_runner.py`.
+3. **IntentClassifier** routait en `FEEDBACK` un message de correction de profil contenant
+   une question sans "?" littéral → réponse générique "Noté", tour de conversation perdu.
+   Fix : prompt système du fallback LLM renforcé dans `src/coach_agent/intent/classifier.py`.
 
 ## Gaps produit connus (priorité V2 Coach Intelligence)
 
-1. **Règles KE non décrites** — le coach cite "RULE-009" sans expliquer son contenu en langage naturel.
-   Impacte : `pedagogical_quality` sur tous les profils.
+1. **Règles KE non décrites** — substantiellement amélioré : plus de code brut
+   "RULE-009" observé ; le coach cite la description texte de la règle (parfois encore
+   entre guillemets de façon un peu technique). Impact résiduel faible sur `pedagogical_quality`.
 
-2. **Profil biographique vs charge récente** — le KE classe un coureur "débutant" selon sa charge
-   d'activité récente (11km/semaine), même si l'utilisateur déclare 8 ans d'expérience.
-   Le FollowupHandler reconnaît maintenant la discordance (fix appliqué) mais ne peut pas corriger
-   la classification. Fix complet : mécanisme de correction profil in-conversation.
+2. **Profil biographique vs charge récente** — **non résolu, confirmé récurrent**. Le KE
+   classe un coureur "débutant" selon sa charge d'activité récente, même si le coureur
+   déclare une forte expérience en cours de conversation. Le coach reconnaît honnêtement
+   la discordance mais ne peut pas corriger la classification. C'est la cause principale
+   des scores encore sous le seuil (ambitious_marathoner, injured_runner). Fix complet :
+   mécanisme de correction profil in-conversation.
 
-3. **Données brutes non exposées** — profils data-driven demandent HRV, score sommeil Garmin.
-   Le coach ne peut pas les fournir car ils ne remontent pas jusqu'au FollowupHandler.
+3. **Données brutes non exposées** — profils data-driven demandent HRV, score sommeil
+   Garmin. Non testable de façon concluante avec le jeu de données Strava actuel (pas de
+   HRV/sommeil dans l'export).
 
 ## Immediate next steps
 
-1. Itérer sur Coach Intelligence — ajouter descriptions lisibles des règles KE dans le prompt
-2. Lancer un nouveau pipe QA de 5 conversations pour mesurer l'impact
+1. Mécanisme de correction profil in-conversation (gap #2) — priorité n°1, seul gap
+   connu qui reste un vrai risque de score sur plusieurs profils
+2. Lancer un nouveau pipe QA de 5-10 conversations pour vérifier la stabilité du score
+   moyen ≥7.5 (variance actuelle élevée)
 3. Alimenter la Runner Memory — renseigner les actual_outcome sur décisions passées
-4. Mécanisme de correction profil in-conversation (moyen terme)
+4. Envisager d'assouplir la détection de question sans "?" dans la passe regex de
+   l'IntentClassifier (`src/coach_agent/intent/classifier.py`)
 
 ---
 

@@ -75,8 +75,15 @@ _CLASSIFY_SYSTEM = (
     "- ANALYSIS_REQUEST : demande d'analyse ou recommandation sur l'entraînement\n"
     "- EXPLANATION_REQUEST : demande d'explication sur une décision de coaching\n"
     "- HYPOTHETICAL : exploration d'un scénario hypothétique\n"
-    "- FEEDBACK : retour sur une expérience vécue ou ressenti physique\n"
+    "- FEEDBACK : retour sur une expérience vécue ou ressenti physique, SANS demande "
+    "explicite à laquelle répondre (le coureur informe, il ne cherche pas de réponse)\n"
     "- GENERAL_QUESTION : autre question générale\n\n"
+    "IMPORTANT : si le message mentionne une blessure, une correction de profil "
+    "(âge, expérience, historique) ou un ressenti physique MAIS contient aussi une "
+    "question ou une demande (explicite, ou formulée sans '?' comme "
+    "'je veux savoir si...' / 'est-ce que je peux...'), classe-le selon la demande "
+    "(EXPLANATION_REQUEST, ANALYSIS_REQUEST ou GENERAL_QUESTION), jamais FEEDBACK — "
+    "un simple accusé de réception laisserait la question sans réponse.\n\n"
     'Réponds en JSON : {"intent": "<CATEGORIE>"}'
 )
 

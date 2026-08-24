@@ -27,6 +27,15 @@ class GeminiLLMClient:
                 system_instruction=system_prompt,
                 max_output_tokens=self.max_tokens,
                 response_mime_type="application/json",
+                # Gemini 2.5's "thinking" tokens count against max_output_tokens.
+                # With thinking enabled, long reasoning prompts (decision + metrics
+                # + profile + scientific/memory context) can burn most of the
+                # budget on invisible thinking tokens, truncating the visible JSON
+                # mid-string — which then fails to parse and leaks raw JSON text
+                # to the end user (see data/qa_pipe pipe run, ambitious_marathoner
+                # turn 1). Disable thinking to guarantee the full budget goes to
+                # the actual response, matching src/qa_agent/llm.py.
+                thinking_config=types.ThinkingConfig(thinking_budget=0),
             ),
         )
         usage = response.usage_metadata
