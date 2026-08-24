@@ -26,3 +26,4 @@ class ConversationSession:
     last_state: RunnerState | None = None
     last_decision_record: CoachingDecision | None = None
     pending_feedback: list[str] = field(default_factory=list)
+    pending_profile_correction: dict | None = None

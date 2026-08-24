@@ -48,6 +48,27 @@ class RunnerProfileStore:
     def exists(self) -> bool:
         return self._path.exists()
 
+    def save(self, runner_id: str, profile: RunnerProfile) -> None:
+        """Overwrite the YAML file with the given runner_id + profile."""
+        raw = {
+            "runner_id": runner_id,
+            "age": profile.age,
+            "experience_level_declared": profile.experience_level_declared,
+            "sessions_per_week_available": profile.sessions_per_week_available,
+            "sex": profile.sex,
+            "pathologies_connues": profile.pathologies_connues,
+            "recent_race_time_10k": profile.recent_race_time_10k,
+            "recent_race_time_half": profile.recent_race_time_half,
+            "recent_race_time_marathon": profile.recent_race_time_marathon,
+            "VMA_kmh": profile.VMA_kmh,
+            "race_target_time": profile.race_target_time,
+            "race_target_date": profile.race_target_date,
+            "years_running": profile.years_running,
+        }
+        self._path.parent.mkdir(parents=True, exist_ok=True)
+        with self._path.open("w", encoding="utf-8") as fh:
+            yaml.safe_dump(raw, fh, allow_unicode=True, sort_keys=False)
+
 
 def _opt_int(v) -> int | None:
     return int(v) if v is not None else None

@@ -20,6 +20,7 @@ from src.coach_agent.domain.session import ConversationSession, ConversationTurn
 from src.coach_agent.handlers.analysis_handler import AnalysisHandler
 from src.coach_agent.handlers.feedback_handler import FeedbackHandler
 from src.coach_agent.handlers.followup_handler import FollowupHandler
+from src.coach_agent.handlers.profile_correction_handler import ProfileCorrectionHandler
 from src.coach_agent.intent.classifier import IntentClassifier
 from src.coach_agent.session.feedback_store import FeedbackStore
 from src.coach_agent.session.session_store import SessionStore
@@ -56,10 +57,12 @@ class CoachAgent:
         self._followup_handler = FollowupHandler(
             llm_client=llm_client,
             memory_store=memory_store,
+            profile_store=profile_store,
         )
         self._feedback_handler = FeedbackHandler(
             feedback_store=feedback_store or FeedbackStore(),
         )
+        self._profile_correction_handler = ProfileCorrectionHandler(profile_store)
 
     def ask(self, user_message: str, session_id: str = "default") -> AgentResponse:
         session = self._session_store.get_or_create(session_id)
@@ -109,6 +112,11 @@ class CoachAgent:
         session: ConversationSession,
     ):
         """Return (text, sources, coach_response)."""
+        if session.pending_profile_correction is not None:
+            resolved = self._resolve_pending_profile_correction(user_message, session)
+            if resolved is not None:
+                return resolved
+
         if intent == UserIntent.ANALYSIS_REQUEST:
             # First analysis of this session → run full KE pipeline
             # Subsequent ANALYSIS_REQUESTs are follow-up questions about
@@ -121,8 +129,32 @@ class CoachAgent:
             return self._handle_feedback(user_message, session)
 
         # EXPLANATION_REQUEST, HYPOTHETICAL, GENERAL_QUESTION → follow-up
-        text, sources = self._followup_handler.handle(user_message, session)
+        text, sources, profile_correction = self._followup_handler.handle(user_message, session)
+        if profile_correction:
+            session.pending_profile_correction = profile_correction
         return text, sources, None
+
+    def _resolve_pending_profile_correction(
+        self,
+        user_message: str,
+        session: ConversationSession,
+    ):
+        """Return (text, sources, coach_response) if the pending correction was
+        resolved this turn (confirmed or denied), None if the message is ambiguous
+        and should fall through to normal routing (pending stays untouched)."""
+        confirmed = self._profile_correction_handler.detect_confirmation(user_message)
+        if confirmed is None:
+            return None
+
+        pending = session.pending_profile_correction
+        session.pending_profile_correction = None
+
+        if confirmed:
+            runner_id = self._resolve_runner_id(session)
+            self._profile_correction_handler.apply(runner_id, pending)
+            return "C'est noté, j'ai mis à jour ton profil.", [], None
+
+        return "Pas de souci, je laisse ton profil tel qu'il est.", [], None
 
     def _handle_analysis(self, session: ConversationSession):
         result = self._analysis_handler.handle()
