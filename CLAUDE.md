@@ -108,23 +108,33 @@ Current objective:
 
 Atteindre les seuils MVP sur les 8 critères QA via des itérations sur Coach Intelligence.
 
-## État QA (2026-07-30)
+## État QA (2026-08-24)
 
-Premier pipe QA sur données réelles (39 activités Strava importées, profil minimal
-runner_id=christian/age=23/sex=male). 8 conversations lancées (5 officielles + 3
-vérifications post-fix). Score moyen : **8.11/10** (seuil MVP : 7.5) — **seuil atteint**,
-avec variance élevée (σ≈1.99) et un résultat porté surtout par 3 bugs corrigés
-(voir ci-dessous), pas par une résolution des gaps produits connus.
+Pipe de validation du fix gap #2 (correction de profil in-conversation + KE v1.3.2),
+8 conversations, toutes personas couvertes (`data/qa_runs/20260824_211205`). Score moyen
+Gemini : **8.7/10** (σ≈1.6, en baisse par rapport à 1.99) — jugé aussi avec Groq + Mistral
+(`scripts/rejudge_multi_llm.py`) pour éviter de confondre effet du fix et bruit de juge
+(voir "Biais de juge QA" ci-dessous).
 
-Résultats par profil :
-- anxious_beginner : 10.0/10 ✅ (était 9.60)
-- ambitious_marathoner : 4.66/10 ❌ (était 8.04 — chute due au gap #2, déclenché cette fois)
-- injured_runner : 7.4/10 ❌ proche seuil (était 4.42 — net progrès)
-- cautious_runner : 10.0/10 ✅ (était 7.58)
-- performance_obsessed : 8.48/10 ✅ (était 5.18 — net progrès)
+**Vote à la majorité (2 juges sur 3 ≥ seuil) : 7/8 conversations passent.**
 
-Détail complet : `data/qa_pipe/mvp_progress.md`
-Transcripts + rapports : `data/qa_pipe/pipe_20260730_183347.md`
+- anxious_beginner ×2 : 10.0/10 — **PASS 3/3**
+- ambitious_marathoner : 9.24/10 — **PASS 3/3** ; deuxième conv 7.50/10 — PASS 2/3
+- injured_runner : 10.0/10 — **PASS 3/3** (Groq 9.10, Mistral 10.0)
+- cautious_runner : 10.0/10 — PASS 3/3
+- busy_parent : 7.04/10 — PASS 2/3 (Gemini juste sous le seuil, Groq/Mistral au-dessus)
+- performance_obsessed : 5.90/10 — **FAIL 0/3, unanime** (nouveau gap identifié, voir #4
+  ci-dessous)
+
+**Gap #2 confirmé résolu** : `ambitious_marathoner` et `injured_runner` — les deux
+profils qui faisaient échouer le pipe du 30/07 à cause du gap #2 — passent maintenant à
+la majorité de juges indépendants, pas seulement selon Gemini. C'est un signal robuste,
+pas un artefact de juge unique (contrairement à ce qu'un seul juge alternatif aurait pu
+suggérer — voir constat ci-dessous).
+
+Ancien pipe (2026-07-30, avant le fix) : score moyen 8.11/10, σ≈1.99,
+`ambitious_marathoner` 4.66 ❌ et `injured_runner` 7.4 ❌. Détail :
+`data/qa_pipe/mvp_progress.md`, `data/qa_pipe/pipe_20260730_183347.md`.
 
 ### Bugs corrigés pendant ce pipe
 
@@ -173,34 +183,40 @@ alternatif (Groq seul) aurait ici mené à une fausse conclusion de "faux positi
    "RULE-009" observé ; le coach cite la description texte de la règle (parfois encore
    entre guillemets de façon un peu technique). Impact résiduel faible sur `pedagogical_quality`.
 
-2. **Profil biographique vs charge récente** — **mécanisme de correction implémenté
-   (2026-08-24), impact sur le score QA pas encore mesuré**. Le KE classe un coureur
-   "débutant" selon sa charge d'activité récente ; ce comportement est volontaire
-   (`compute_experience_level`, garde-fou anti-surestimation) et le calcul lui-même
-   n'a pas changé. Ce qui manquait : (a) `experience_level_declared`/`years_running`
-   n'étaient jamais mis à jour depuis la conversation — ajouté `RunnerProfileStore.save()`,
-   détection d'une correction candidate par le `FollowupHandler` (confirmation explicite
-   requise avant écriture — `ProfileCorrectionHandler`), état `pending_profile_correction`
-   sur la session ; (b) `experience_level_source` (declared|calculated|reconciled) était
-   calculé puis jeté par l'orchestrator, donc le coach ne pouvait jamais citer la vraie
-   raison — **KE étendu en v1.3.2** (extension additive documentée dans
-   `docs/knowledge_engine/KB_CANONICAL_v1.3.2.md`, `ENGINE_VERSION`/`SCHEMA_VERSION` passés
-   à `"1.3.2"`) : `experience_level`/`experience_level_source` sont maintenant exposés sur
-   `DecisionEnvelope` et injectés dans le prompt du `FollowupHandler`. À valider par un
-   nouveau pipe QA.
+2. **Profil biographique vs charge récente** — **✅ résolu et validé (2026-08-24)**. Le KE
+   classe un coureur "débutant" selon sa charge d'activité récente ; ce comportement est
+   volontaire (`compute_experience_level`, garde-fou anti-surestimation) et le calcul
+   lui-même n'a pas changé. Ce qui manquait : (a) `experience_level_declared`/
+   `years_running` n'étaient jamais mis à jour depuis la conversation — ajouté
+   `RunnerProfileStore.save()`, détection d'une correction candidate par le
+   `FollowupHandler` (confirmation explicite requise avant écriture —
+   `ProfileCorrectionHandler`), état `pending_profile_correction` sur la session ; (b)
+   `experience_level_source` (declared|calculated|reconciled) était calculé puis jeté par
+   l'orchestrator, donc le coach ne pouvait jamais citer la vraie raison — **KE étendu en
+   v1.3.2** (`docs/knowledge_engine/KB_CANONICAL_v1.3.2.md`) : `experience_level`/
+   `experience_level_source` exposés sur `DecisionEnvelope` et injectés dans le prompt du
+   `FollowupHandler`. Validé par le pipe du 24/08 : `ambitious_marathoner` et
+   `injured_runner` passent maintenant à la majorité de 3 juges indépendants (voir
+   "État QA" ci-dessus).
 
 3. **Données brutes non exposées** — profils data-driven demandent HRV, score sommeil
    Garmin. Non testable de façon concluante avec le jeu de données Strava actuel (pas de
    HRV/sommeil dans l'export).
 
+4. **Explication ACWR insuffisante pour profil data-driven (nouveau, 2026-08-24)** —
+   `performance_obsessed` échoue à l'unanimité des 3 juges (5.90/7.44/5.34, seul échec du
+   pipe du 24/08). Le coach ne sait pas expliquer comment l'ACWR sera géré après une
+   reprise à volume réduit (ex: 5km) pour un coureur expérimenté — celui-ci se sent
+   "ignoré et infantilisé" par une recommandation qui ignore son passif. Contrairement au
+   gap #2, ce n'est pas un problème de données manquantes mais de pédagogie/explication :
+   le coach devrait pouvoir projeter/expliquer la trajectoire de charge à venir, pas
+   seulement la semaine courante.
+
 ## Immediate next steps
 
-1. Lancer un nouveau pipe QA de 5-10 conversations pour mesurer l'impact du mécanisme
-   de correction profil (gap #2) sur ambitious_marathoner / injured_runner et vérifier
-   la stabilité du score moyen ≥7.5 (variance actuelle élevée) — **juger avec les 3
-   modèles (Gemini + Groq + Mistral, vote à la majorité)** via
-   `scripts/rejudge_multi_llm.py` pour ne pas confondre effet du fix et bruit d'un juge
-   isolé (voir "Biais de juge QA" ci-dessus — Groq seul aurait donné une fausse lecture)
+1. **Gap #4** — améliorer l'explication de la trajectoire ACWR pour les profils
+   data-driven/expérimentés (`performance_obsessed` échoue à l'unanimité, voir gap #4
+   ci-dessus). Probablement un chantier Coach Intelligence (prompt/contexte), pas KE.
 2. Alimenter la Runner Memory — renseigner les actual_outcome sur décisions passées
 3. Envisager d'assouplir la détection de question sans "?" dans la passe regex de
    l'IntentClassifier (`src/coach_agent/intent/classifier.py`)

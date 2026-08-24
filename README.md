@@ -12,9 +12,10 @@ Not a chatbot over Strava data — a model that understands the athlete, follows
 
 Le Coach Agent V1 est livré et opérationnel. On valide maintenant la qualité des conversations en production via un QA Agent automatisé.
 
-Score QA courant : **8.11/10** moyenne (seuil MVP : 7.5, atteint mais variance élevée,
-2 profils encore sous le seuil) — voir `data/qa_pipe/mvp_progress.md` et CLAUDE.md
-pour le détail par profil et les correctifs en cours de validation.
+Score QA courant : **8.7/10** moyenne, σ≈1.6 (seuil MVP : 7.5) — 7/8 conversations
+passent un vote à la majorité de 3 juges LLM indépendants (Gemini/Groq/Mistral, voir
+`scripts/rejudge_multi_llm.py`). 1 profil encore en échec unanime
+(`performance_obsessed` — explication ACWR insuffisante). Détail dans CLAUDE.md.
 
 ---
 
