@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 
 from src.coach_agent.domain.session import ConversationSession
+from src.coach_agent.formatting import format_plan_hints, format_target_pace
 from src.coach_intelligence.assembler.response_assembler import LLMClient
 from src.runner_memory.indexer import build_runner_context_store
 from src.runner_memory.store import MemoryStore
@@ -34,6 +35,15 @@ _FOLLOWUP_SYSTEM = (
     "ton profil ?\". Renseigne alors le champ profile_correction avec UNIQUEMENT les champs qui diffèrent.\n"
     "- Ne renseigne profile_correction que si le coureur affirme un fait sur lui-même, jamais pour une "
     "question ou une hypothèse.\n"
+    "- Si le coureur demande explicitement un PLAN sur plusieurs semaines (\"fais-moi un plan\", "
+    "\"comment structurer mes semaines\", etc.), NE REFUSE JAMAIS et NE TE LIMITE PAS à la décision de "
+    "la semaine en cours. Construis une vue d'ensemble à partir des faits du contexte DÉCISION SYSTÈME : "
+    "semaines restantes avant course, allure cible, squelette de phases (semaines de base/spécifique/"
+    "affûtage) s'il est présent. Si le squelette de phases n'est PAS présent dans le contexte (donnée "
+    "insuffisante), dis-le explicitement et pourquoi (ex: historique encore trop irrégulier) plutôt que "
+    "de refuser platement — donne quand même une indication qualitative de la trajectoire à venir "
+    "(ex: \"ces prochaines semaines servent à stabiliser ta charge ; une fois régulière, je pourrai te "
+    "donner un découpage précis en semaines de travail spécifique et d'affûtage\").\n"
     "- Utilise les règles déclenchées et les métriques du contexte pour justifier ta réponse.\n"
     "- Reste dans le rôle d'un coach, pas d'un assistant générique.\n"
     "- Réponses directes et utiles (3-5 phrases).\n\n"
@@ -150,15 +160,33 @@ def _build_prompt(
     if envelope:
         triggered = [r for r in envelope.triggered_rules if r.triggered]
         rules_str = "; ".join(r.reason for r in triggered if r.reason) or "aucune règle déclenchée"
-        parts.append(
-            "DÉCISION SYSTÈME :\n"
-            f"- Action : {envelope.decision.action}\n"
-            f"- Cible semaine prochaine : {envelope.decision.absolute_next_week_target_km:.1f} km\n"
-            f"- Readiness : {envelope.readiness.score}/100\n"
-            f"- Règles déclenchées : {rules_str}\n"
+        weeks_to_race = session.last_state.context.weeks_to_race if session.last_state else None
+
+        lines = [
+            "DÉCISION SYSTÈME :",
+            f"- Action : {envelope.decision.action}",
+            f"- Cible semaine prochaine : {envelope.decision.absolute_next_week_target_km:.1f} km",
+            f"- Readiness : {envelope.readiness.score}/100",
+            f"- Règles déclenchées : {rules_str}",
             f"- Niveau d'expérience retenu : {envelope.experience_level} "
-            f"(experience_level_source: {envelope.experience_level_source})"
-        )
+            f"(experience_level_source: {envelope.experience_level_source})",
+            f"- Semaines avant la course : {weeks_to_race if weeks_to_race is not None else 'pas de course cible'}",
+        ]
+
+        pace_line = format_target_pace(envelope)
+        if pace_line:
+            lines.append(f"- {pace_line}")
+
+        plan_lines = format_plan_hints(envelope.plan_hints)
+        if plan_lines:
+            lines.append("- Squelette de plan calculé : " + " | ".join(plan_lines))
+        elif weeks_to_race is not None:
+            lines.append(
+                "- Squelette de plan calculé : aucun pour l'instant (donnée insuffisante — "
+                "historique trop irrégulier ou base pas encore suffisante)"
+            )
+
+        parts.append("\n".join(lines))
 
     response = session.last_coach_response
     if response:

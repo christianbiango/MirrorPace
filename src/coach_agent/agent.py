@@ -21,6 +21,7 @@ from src.coach_agent.handlers.analysis_handler import AnalysisHandler
 from src.coach_agent.handlers.feedback_handler import FeedbackHandler
 from src.coach_agent.handlers.followup_handler import FollowupHandler
 from src.coach_agent.handlers.profile_correction_handler import ProfileCorrectionHandler
+from src.coach_agent.formatting import format_plan_hints, format_target_pace
 from src.coach_agent.intent.classifier import IntentClassifier
 from src.coach_agent.session.feedback_store import FeedbackStore
 from src.coach_agent.session.session_store import SessionStore
@@ -198,10 +199,10 @@ def _format_analysis_response(response, envelope=None) -> str:
         hints = "\n".join(f"  • {h}" for h in response.plan_hints_formatted)
         parts.append(f"Plan suggéré :\n{hints}")
 
-    plan_detail = _format_plan_hints(envelope.plan_hints) if envelope else []
-    pace_line = _format_target_pace(envelope) if envelope else None
+    plan_detail = [f"  • {line}" for line in format_plan_hints(envelope.plan_hints)] if envelope else []
+    pace_line = format_target_pace(envelope) if envelope else None
     if pace_line:
-        plan_detail.insert(0, pace_line)
+        plan_detail.insert(0, f"  • {pace_line}")
     if plan_detail:
         parts.append("Détail du plan (calculé) :\n" + "\n".join(plan_detail))
 
@@ -209,51 +210,3 @@ def _format_analysis_response(response, envelope=None) -> str:
         parts.append(f"Note : {response.confidence_note}")
 
     return "\n\n".join(parts)
-
-
-def _format_plan_hints(plan_hints) -> list[str]:
-    """Render P4 plan hints from real numbers (envelope.plan_hints[].params/.reason)
-    rather than letting the LLM paraphrase them — quantitative plan facts must be
-    exact, not reconstructed from memory by a generative model."""
-    lines: list[str] = []
-    for h in plan_hints:
-        if h.rule_id in ("RULE-015", "RULE-027") and "suggested_phases" in h.params:
-            p = h.params["suggested_phases"]
-            phase_parts = []
-            if "general" in p:
-                phase_parts.append(f"{p['general']} sem. base")
-            phase_parts.append(f"{p['specific']} sem. spécifique")
-            phase_parts.append(f"{p['taper']} sem. affûtage")
-            lines.append(f"  • {h.reason} → " + ", ".join(phase_parts))
-        elif h.reason:
-            lines.append(f"  • {h.reason}")
-    return lines
-
-
-_PACE_SOURCE_LABELS = {
-    "race_target_time": "objectif déclaré",
-    "riegel_from_half": "projection Riegel depuis semi récent",
-    "riegel_from_10k": "projection Riegel depuis 10k récent",
-    "vma_only": "VMA seule",
-}
-
-
-def _format_target_pace(envelope) -> str | None:
-    """Same principle as _format_plan_hints: the pace is a computed fact
-    (envelope.target_marathon_pace_min_km), never an LLM restatement."""
-    pace = envelope.target_marathon_pace_min_km
-    if pace is None:
-        return None
-    source_label = _PACE_SOURCE_LABELS.get(
-        envelope.target_marathon_pace_source, envelope.target_marathon_pace_source
-    )
-    return f"  • Allure marathon cible : {_format_pace_min_per_km(pace)}/km ({source_label})"
-
-
-def _format_pace_min_per_km(pace_min_per_km: float) -> str:
-    minutes = int(pace_min_per_km)
-    seconds = round((pace_min_per_km - minutes) * 60)
-    if seconds == 60:
-        minutes += 1
-        seconds = 0
-    return f"{minutes}:{seconds:02d}"

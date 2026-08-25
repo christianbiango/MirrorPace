@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from datetime import datetime, timezone
+from types import SimpleNamespace
 
 import pytest
 
@@ -11,6 +12,7 @@ from src.knowledge_engine.domain.schemas.decision import (
     Decision,
     DecisionEnvelope,
     DecisionMeta,
+    PlanHint,
     ReadinessOut,
 )
 from src.knowledge_engine.domain.schemas.runner_state import RunnerProfile
@@ -32,8 +34,8 @@ class _FakeLLMClient:
         return _FakeLLMResponse(self._response_text)
 
 
-def _envelope() -> DecisionEnvelope:
-    return DecisionEnvelope(
+def _envelope(**overrides) -> DecisionEnvelope:
+    defaults = dict(
         meta=DecisionMeta(
             engine_version="1.3.1", config_hash="x", computed_at="2026-08-24T00:00:00Z", schema_version="1.3.1",
         ),
@@ -42,13 +44,24 @@ def _envelope() -> DecisionEnvelope:
         ),
         readiness=ReadinessOut(score=80, confidence_score=80),
     )
+    defaults.update(overrides)
+    return DecisionEnvelope(**defaults)
 
 
-def _session() -> ConversationSession:
+def _session(weeks_to_race: int | None = None, envelope: DecisionEnvelope | None = None) -> ConversationSession:
+    last_state = (
+        SimpleNamespace(
+            context=SimpleNamespace(weeks_to_race=weeks_to_race),
+            meta=SimpleNamespace(runner_id="christian"),
+        )
+        if weeks_to_race is not None
+        else None
+    )
     return ConversationSession(
         session_id="s1",
         created_at=datetime.now(tz=timezone.utc).isoformat(),
-        last_envelope=_envelope(),
+        last_envelope=envelope or _envelope(),
+        last_state=last_state,
     )
 
 
@@ -124,3 +137,49 @@ def test_ignores_invalid_experience_level(profile_store):
     _, _, correction = handler.handle("Je suis un coureur pro", _session())
 
     assert correction is None
+
+
+# ── plan-building context (grounding for "build me a plan" requests) ─────────
+
+def test_prompt_includes_weeks_to_race_pace_and_plan_skeleton(profile_store):
+    envelope = _envelope(
+        target_marathon_pace_min_km=4.616666,
+        target_marathon_pace_source="race_target_time",
+        plan_hints=[
+            PlanHint(
+                rule_id="RULE-027",
+                hint="structure_specific_block",
+                reason="Fenêtre courte (10 sem.) mais base suffisante",
+                params={"suggested_phases": {"specific": 8, "taper": 2}},
+            ),
+        ],
+    )
+    llm_client = _FakeLLMClient(json.dumps({"text": "Voici ton plan."}))
+    handler = FollowupHandler(llm_client=llm_client, memory_store=None, profile_store=profile_store)
+
+    handler.handle("Fais-moi un plan", _session(weeks_to_race=10, envelope=envelope))
+
+    prompt = llm_client.last_user_prompt
+    assert "Semaines avant la course : 10" in prompt
+    assert "4:37/km" in prompt
+    assert "8 sem. spécifique" in prompt
+
+
+def test_prompt_shows_insufficient_data_fallback_without_plan_hints(profile_store):
+    llm_client = _FakeLLMClient(json.dumps({"text": "..."}))
+    handler = FollowupHandler(llm_client=llm_client, memory_store=None, profile_store=profile_store)
+
+    handler.handle("Fais-moi un plan", _session(weeks_to_race=10))
+
+    prompt = llm_client.last_user_prompt
+    assert "Semaines avant la course : 10" in prompt
+    assert "aucun pour l'instant" in prompt
+
+
+def test_prompt_shows_no_target_race_when_weeks_to_race_unset(profile_store):
+    llm_client = _FakeLLMClient(json.dumps({"text": "..."}))
+    handler = FollowupHandler(llm_client=llm_client, memory_store=None, profile_store=profile_store)
+
+    handler.handle("Pourquoi ?", _session())
+
+    assert "pas de course cible" in llm_client.last_user_prompt
