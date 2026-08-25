@@ -40,4 +40,4 @@ def test_regular_history_triggered():
     assert "suggested_phases" in out.extras
     phases = out.extras["suggested_phases"]
     assert set(phases.keys()) == {"general", "specific", "taper"}
-    assert phases["taper"] == 3
+    assert phases["taper"] == 2  # v1.3.4 C-18 — was 3, now reads cfg.taper_duration_weeks

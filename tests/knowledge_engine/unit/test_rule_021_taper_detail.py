@@ -19,7 +19,7 @@ def test_taper_triggered():
     out = rule_021(state, ComputedVariables(), CFG)
     assert out.triggered is True
     assert out.plan_hint == "taper_structure"
-    assert out.extras["taper_duration_weeks"] == 3
+    assert out.extras["taper_duration_weeks"] == 2  # v1.3.4 C-18
     assert out.extras["keep_intensity"] is True
     # Midpoint of [-60, -40] → -50 in reduction terms.
     assert out.extras["volume_reduction_pct"] == 50.0

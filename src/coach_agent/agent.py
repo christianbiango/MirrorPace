@@ -214,12 +214,14 @@ def _format_plan_hints(plan_hints) -> list[str]:
     exact, not reconstructed from memory by a generative model."""
     lines: list[str] = []
     for h in plan_hints:
-        if h.rule_id == "RULE-015" and "suggested_phases" in h.params:
+        if h.rule_id in ("RULE-015", "RULE-027") and "suggested_phases" in h.params:
             p = h.params["suggested_phases"]
-            lines.append(
-                f"  • {h.reason} → {p['general']} sem. base, {p['specific']} sem. "
-                f"spécifique, {p['taper']} sem. affûtage"
-            )
+            phase_parts = []
+            if "general" in p:
+                phase_parts.append(f"{p['general']} sem. base")
+            phase_parts.append(f"{p['specific']} sem. spécifique")
+            phase_parts.append(f"{p['taper']} sem. affûtage")
+            lines.append(f"  • {h.reason} → " + ", ".join(phase_parts))
         elif h.reason:
             lines.append(f"  • {h.reason}")
     return lines

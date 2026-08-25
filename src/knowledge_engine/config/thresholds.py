@@ -73,7 +73,7 @@ _THRESHOLDS: dict[str, Any] = {
     # ==== TAPER ====
     "taper_volume_reduction_min": 40,
     "taper_volume_reduction_max": 60,
-    "taper_duration_weeks": 3,
+    "taper_duration_weeks": 2,  # v1.3.4 C-18 — was 3
     # ==== READINESS COMPOSITION ====
     "readiness_weights": {
         "recovery": 35,

@@ -36,6 +36,7 @@ _STATUS: dict[str, bool] = {
     "RULE-023": True,
     "RULE-024": False,  # V2 — ambient temperature
     "RULE-025": True,
+    "RULE-027": True,  # v1.3.5 C-19
 }
 
 RULES_STATUS = MappingProxyType(_STATUS)

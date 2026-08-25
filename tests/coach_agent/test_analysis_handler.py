@@ -69,9 +69,9 @@ def test_phase_general_when_far_from_race():
 # ── build_plan_context ───────────────────────────────────────────────────────
 
 def test_build_plan_context_wires_weeks_and_phase():
-    profile = _profile(race_target_date="2026-02-01")  # 3 weeks after 2026-01-10
+    profile = _profile(race_target_date="2026-01-24")  # 2 weeks after 2026-01-10
     ctx = build_plan_context(profile, CFG, date(2026, 1, 10))
-    assert ctx.weeks_to_race == 3
+    assert ctx.weeks_to_race == 2
     assert ctx.current_phase == "taper"
 
 

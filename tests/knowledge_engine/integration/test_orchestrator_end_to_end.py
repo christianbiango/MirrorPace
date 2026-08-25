@@ -124,6 +124,16 @@ def test_p3_green_light_bonus_applied():
     assert env.readiness.components["p3_adjustments"] == 10
 
 
+def test_p4_specific_block_hint_in_short_race_window():
+    """v1.3.5 C-19 — a race 10 weeks out (below RULE-015's 16-week floor, above
+    RULE-021's taper window) still gets a structured hint instead of silence."""
+    state = with_context(make_state(), weeks_to_race=10)
+    env = run_engine(state, CFG)
+    hint_ids = {h.rule_id for h in env.plan_hints}
+    assert "RULE-027" in hint_ids
+    assert "RULE-015" not in hint_ids
+
+
 def test_p4_macro_plan_hint_when_far_from_race():
     state = with_context(make_state(), weeks_to_race=20)
     env = run_engine(state, CFG)

@@ -35,7 +35,7 @@ def rule_015(state: RunnerState, computed: ComputedVariables, cfg: EngineConfig)
         return not_triggered("RULE-015", "P4")
 
     # Compute suggested phase boundaries (Canova-style split).
-    taper = 3
+    taper = cfg.get("taper_duration_weeks")  # v1.3.4 C-18 — was hardcoded to 3
     specific = 8 if weeks_to_race >= 20 else 6
     general = max(weeks_to_race - taper - specific, 0)
     phases = {"general": general, "specific": specific, "taper": taper}
@@ -47,7 +47,11 @@ def rule_015(state: RunnerState, computed: ComputedVariables, cfg: EngineConfig)
         action="plan_hint",
         plan_hint="structure_macroplan",
         reason=f"Macro-plan ({weeks_to_race} sem., CV historique {cv:.2f})",
-        params_used={"macro_plan_min_weeks": min_weeks, "cv_max_regular": cv_max},
+        params_used={
+            "macro_plan_min_weeks": min_weeks,
+            "cv_max_regular": cv_max,
+            "taper_duration_weeks": taper,
+        },
         extras={"plan_type": "macro", "suggested_phases": phases},
     )
 
@@ -267,6 +271,56 @@ def rule_022(state: RunnerState, computed: ComputedVariables, cfg: EngineConfig)
     )
 
 
+# --------------------------------------------------------------------------- #
+# RULE-027 — Structuration spécifique/affûtage en fenêtre courte (v1.3.5 C-19)
+# --------------------------------------------------------------------------- #
+
+def rule_027(state: RunnerState, computed: ComputedVariables, cfg: EngineConfig) -> RuleOutcome:
+    """Fills the gap between RULE-021 (taper, weeks_to_race <= taper_duration_weeks)
+    and RULE-015 (full macro-plan, weeks_to_race >= macro_plan_min_weeks) — a race
+    landing in between (e.g. prep already underway) got no structuring at all."""
+    weeks_to_race = state.context.weeks_to_race
+    taper_weeks = cfg.get("taper_duration_weeks")
+    macro_min = cfg.get("macro_plan_min_weeks")
+    cv_max = cfg.get("cv_max_regular")
+    base_min = cfg.get("beginner_base_min_km")
+    history = state.week.weekly_distance_history
+
+    if weeks_to_race is None or weeks_to_race <= taper_weeks or weeks_to_race >= macro_min:
+        return not_triggered("RULE-027", "P4")
+    if len(history) < 4:
+        return not_triggered("RULE-027", "P4")
+    if coefficient_of_variation(history) >= cv_max:
+        return not_triggered("RULE-027", "P4")
+    # Same readiness signal as RULE-016: if the base isn't there yet, closing that
+    # gap is the priority, not a formal specific/taper split.
+    if computed.experience_level == "beginner" and computed.chronic_load_distance < base_min:
+        return not_triggered("RULE-027", "P4")
+
+    specific_weeks = weeks_to_race - taper_weeks
+    phases = {"specific": specific_weeks, "taper": taper_weeks}
+
+    return RuleOutcome(
+        rule_id="RULE-027",
+        priority="P4",
+        triggered=True,
+        action="plan_hint",
+        plan_hint="structure_specific_block",
+        reason=(
+            f"Fenêtre courte ({weeks_to_race} sem., sous le seuil macro-plan de "
+            f"{macro_min} sem.) mais base suffisante : {specific_weeks} sem. de "
+            f"travail spécifique + {taper_weeks} sem. d'affûtage"
+        ),
+        params_used={
+            "taper_duration_weeks": taper_weeks,
+            "macro_plan_min_weeks": macro_min,
+            "cv_max_regular": cv_max,
+            "beginner_base_min_km": base_min,
+        },
+        extras={"plan_type": "specific_block", "suggested_phases": phases},
+    )
+
+
 PLANNING_RULES: list[RuleSpec] = [
     RuleSpec("RULE-015", "P4", rule_015),
     RuleSpec("RULE-016", "P4", rule_016),
@@ -276,4 +330,5 @@ PLANNING_RULES: list[RuleSpec] = [
     RuleSpec("RULE-020", "P4", rule_020),
     RuleSpec("RULE-021", "P4", rule_021),
     RuleSpec("RULE-022", "P4", rule_022),
+    RuleSpec("RULE-027", "P4", rule_027),
 ]

@@ -35,6 +35,22 @@ def test_formats_macro_plan_with_phase_breakdown():
     assert "3 sem. affûtage" in lines[0]
 
 
+def test_formats_specific_block_without_general_phase():
+    hints = [
+        PlanHint(
+            rule_id="RULE-027",
+            hint="structure_specific_block",
+            reason="Fenêtre courte (10 sem.) mais base suffisante",
+            params={"plan_type": "specific_block", "suggested_phases": {"specific": 8, "taper": 2}},
+        ),
+    ]
+    lines = _format_plan_hints(hints)
+    assert len(lines) == 1
+    assert "8 sem. spécifique" in lines[0]
+    assert "2 sem. affûtage" in lines[0]
+    assert "sem. base" not in lines[0]
+
+
 def test_formats_other_rules_from_reason_only():
     hints = [
         PlanHint(rule_id="RULE-021", hint="taper_structure", reason="Taper : -50% volume sur 3 sem."),
