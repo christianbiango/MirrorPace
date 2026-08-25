@@ -50,7 +50,13 @@ class TestLoadEnrichments:
         if not CSV_PATH.exists():
             pytest.skip("Strava export not present locally")
         enrichments = load_enrichments(CSV_PATH)
-        assert len(enrichments) == 39
+        # Self-consistent rather than a hardcoded count: this reads a live personal
+        # export that grows every time it's refreshed, so compare against the file's
+        # own row count instead of a number that goes stale on the next re-export.
+        import pandas as pd
+        df = pd.read_csv(CSV_PATH, header=0)
+        expected = int(df.iloc[:, 12].notna().sum())  # filename column, see _COL_FILENAME
+        assert len(enrichments) == expected
 
 
 class TestApplyEnrichment:
