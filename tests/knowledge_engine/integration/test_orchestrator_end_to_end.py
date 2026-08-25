@@ -42,6 +42,22 @@ def test_envelope_shape_defaults():
     assert env.experience_level in {"beginner", "intermediate", "advanced"}
     assert env.experience_level_source in {"declared", "calculated", "reconciled"}
 
+    # v1.3.6 C-20 — target marathon pace is surfaced, not discarded
+    # (default fixture profile has recent_race_time_half set -> riegel_from_half)
+    assert env.target_marathon_pace_source == "riegel_from_half"
+    assert env.target_marathon_pace_min_km is not None
+
+
+def test_target_marathon_pace_exposed_from_race_target_time():
+    """v1.3.6 C-20: a declared race_target_time must surface both the computed
+    pace and its source on the envelope, not just internally."""
+    state = with_profile(make_state(), race_target_time=11700)  # 3h15
+    env = run_engine(state, CFG)
+
+    assert env.target_marathon_pace_source == "race_target_time"
+    assert env.target_marathon_pace_min_km is not None
+    assert round(env.target_marathon_pace_min_km, 2) == round(11700 / 60 / 42.195, 2)
+
 
 def test_experience_level_source_calculated_when_declared_is_too_flattering():
     """C-16: declaring 'advanced' with a chronic load below the advanced threshold

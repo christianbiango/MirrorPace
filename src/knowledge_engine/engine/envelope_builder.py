@@ -1,5 +1,5 @@
 """DecisionEnvelope assembler — KB v1.2 §6.2 + v1.3 C-03 + v1.3.1 C-14 + v1.3.2 C-16
-+ v1.3.3 C-17."""
++ v1.3.3 C-17 + v1.3.6 C-20."""
 
 from __future__ import annotations
 
@@ -155,4 +155,6 @@ def build_envelope(
         ),
         experience_level=computed.experience_level,
         experience_level_source=computed.experience_level_source,
+        target_marathon_pace_min_km=computed.target_marathon_pace_min_km,
+        target_marathon_pace_source=computed.target_marathon_pace_source,
     )

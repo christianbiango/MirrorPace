@@ -11,18 +11,19 @@ La spec finale est composée de trois documents, à lire dans cet ordre :
 
 | Priorité | Document | Rôle | Lignes |
 |----------|----------|------|--------|
-| 7 (base) | `KB_CANONICAL_v1.2.md` | Spec complète — schémas, règles, formules, seuils, orchestration, garde-fous, décisions D-01 à D-20 | ~1500 |
-| 6 | `KB_CANONICAL_v1.3.md` | Patch correctif Red Team — 11 corrections, remplace les sections listées dans son §1 | ~400 |
-| 5 | `KB_CANONICAL_v1.3.1.md` | Patch de clarification pré-implémentation — 4 définitions machine, aucun changement métier | ~250 |
-| 4 | `KB_CANONICAL_v1.3.2.md` | Extension additive — expose `experience_level_source` dans `DecisionEnvelope`, aucun changement de calcul | ~40 |
-| 3 | `KB_CANONICAL_v1.3.3.md` | Extension additive — expose `reason` sur `PlanHint`, aucun changement de calcul | ~40 |
-| 2 | `KB_CANONICAL_v1.3.4.md` | Changement de seuil — `taper_duration_weeks` 3 → 2 semaines (RULE-015 et RULE-021) | ~40 |
-| 1 (prime) | `KB_CANONICAL_v1.3.5.md` | Nouvelle règle — RULE-027, structuration spécifique/affûtage en fenêtre courte (3-15 sem.) | ~60 |
+| 8 (base) | `KB_CANONICAL_v1.2.md` | Spec complète — schémas, règles, formules, seuils, orchestration, garde-fous, décisions D-01 à D-20 | ~1500 |
+| 7 | `KB_CANONICAL_v1.3.md` | Patch correctif Red Team — 11 corrections, remplace les sections listées dans son §1 | ~400 |
+| 6 | `KB_CANONICAL_v1.3.1.md` | Patch de clarification pré-implémentation — 4 définitions machine, aucun changement métier | ~250 |
+| 5 | `KB_CANONICAL_v1.3.2.md` | Extension additive — expose `experience_level_source` dans `DecisionEnvelope`, aucun changement de calcul | ~40 |
+| 4 | `KB_CANONICAL_v1.3.3.md` | Extension additive — expose `reason` sur `PlanHint`, aucun changement de calcul | ~40 |
+| 3 | `KB_CANONICAL_v1.3.4.md` | Changement de seuil — `taper_duration_weeks` 3 → 2 semaines (RULE-015 et RULE-021) | ~40 |
+| 2 | `KB_CANONICAL_v1.3.5.md` | Nouvelle règle — RULE-027, structuration spécifique/affûtage en fenêtre courte (3-15 sem.) | ~60 |
+| 1 (prime) | `KB_CANONICAL_v1.3.6.md` | Extension additive — expose `target_marathon_pace_min_km`/`_source` dans `DecisionEnvelope`, aucun changement de calcul | ~40 |
 
 **En cas de conflit entre versions : la plus récente prime.**
 
 ```
-v1.3.5 > v1.3.4 > v1.3.3 > v1.3.2 > v1.3.1 > v1.3 > v1.2
+v1.3.6 > v1.3.5 > v1.3.4 > v1.3.3 > v1.3.2 > v1.3.1 > v1.3 > v1.2
 ```
 
 ---
@@ -95,6 +96,12 @@ Les éléments suivants **complètent** v1.2 et v1.3 sans les contredire :
 |-------|--------|
 | C-19 — RULE-027 | Nouvelle règle P4, réutilise uniquement des seuils existants (aucun nouveau seuil) |
 
+### KB_CANONICAL_v1.3.6.md — appliquer l'extension
+
+| Extension | Ajoute |
+|-----------|--------|
+| C-20 — `target_marathon_pace_min_km`/`_source` dans `DecisionEnvelope` | Deux champs additifs, valeurs par défaut, aucun changement de calcul |
+
 ---
 
 ## Prompt d'implémentation
@@ -105,7 +112,8 @@ Lorsqu'on demande à un développeur ou un LLM d'implémenter le moteur, la form
 > lire `KB_CANONICAL_v1.2.md` en intégralité, puis appliquer les overrides de `KB_CANONICAL_v1.3.md`,
 > puis appliquer les clarifications de `KB_CANONICAL_v1.3.1.md`, puis les extensions de
 > `KB_CANONICAL_v1.3.2.md` et `KB_CANONICAL_v1.3.3.md`, puis le changement de seuil de
-> `KB_CANONICAL_v1.3.4.md`, puis la nouvelle règle de `KB_CANONICAL_v1.3.5.md`."
+> `KB_CANONICAL_v1.3.4.md`, puis la nouvelle règle de `KB_CANONICAL_v1.3.5.md`, puis
+> l'extension de `KB_CANONICAL_v1.3.6.md`."
 
 ---
 

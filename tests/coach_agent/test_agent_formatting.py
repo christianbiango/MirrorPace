@@ -1,6 +1,11 @@
 from __future__ import annotations
 
-from src.coach_agent.agent import _format_analysis_response, _format_plan_hints
+from src.coach_agent.agent import (
+    _format_analysis_response,
+    _format_pace_min_per_km,
+    _format_plan_hints,
+    _format_target_pace,
+)
 from src.coach_intelligence.domain.schemas.coach_response import CoachResponse
 from src.knowledge_engine.domain.schemas.decision import PlanHint
 
@@ -12,8 +17,15 @@ def _response(**overrides) -> CoachResponse:
 
 
 class _FakeEnvelope:
-    def __init__(self, plan_hints: list[PlanHint]) -> None:
+    def __init__(
+        self,
+        plan_hints: list[PlanHint],
+        target_marathon_pace_min_km: float | None = None,
+        target_marathon_pace_source: str = "unavailable",
+    ) -> None:
         self.plan_hints = plan_hints
+        self.target_marathon_pace_min_km = target_marathon_pace_min_km
+        self.target_marathon_pace_source = target_marathon_pace_source
 
 
 # ── _format_plan_hints ───────────────────────────────────────────────────────
@@ -66,6 +78,30 @@ def test_skips_hints_without_reason():
 
 def test_empty_plan_hints_returns_empty_list():
     assert _format_plan_hints([]) == []
+
+
+# ── _format_pace_min_per_km / _format_target_pace ───────────────────────────
+
+def test_formats_pace_rounding_down():
+    assert _format_pace_min_per_km(4.616666) == "4:37"
+
+
+def test_formats_pace_rounds_seconds_up_to_next_minute():
+    assert _format_pace_min_per_km(4.999) == "5:00"
+
+
+def test_target_pace_none_when_unavailable():
+    envelope = _FakeEnvelope([], target_marathon_pace_min_km=None)
+    assert _format_target_pace(envelope) is None
+
+
+def test_target_pace_line_includes_source_label():
+    envelope = _FakeEnvelope(
+        [], target_marathon_pace_min_km=4.616666, target_marathon_pace_source="race_target_time"
+    )
+    line = _format_target_pace(envelope)
+    assert "4:37/km" in line
+    assert "objectif déclaré" in line
 
 
 # ── _format_analysis_response ────────────────────────────────────────────────

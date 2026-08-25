@@ -1,5 +1,6 @@
 """DecisionEnvelope — KB v1.2 §6.2 + v1.3 C-03 (medical_referral_reason) + v1.3.2 C-16
-(experience_level / experience_level_source) + v1.3.3 C-17 (PlanHint.reason)."""
+(experience_level / experience_level_source) + v1.3.3 C-17 (PlanHint.reason)
++ v1.3.6 C-20 (target_marathon_pace_min_km / _source)."""
 
 from __future__ import annotations
 
@@ -60,3 +61,5 @@ class DecisionEnvelope:
     llm_context: LlmContext = field(default_factory=LlmContext)
     experience_level: str = "beginner"  # v1.3.2 C-16
     experience_level_source: str = "declared"  # v1.3.2 C-16 — declared | calculated | reconciled
+    target_marathon_pace_min_km: float | None = None  # v1.3.6 C-20
+    target_marathon_pace_source: str = "unavailable"  # v1.3.6 C-20

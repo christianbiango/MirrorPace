@@ -199,6 +199,9 @@ def _format_analysis_response(response, envelope=None) -> str:
         parts.append(f"Plan suggéré :\n{hints}")
 
     plan_detail = _format_plan_hints(envelope.plan_hints) if envelope else []
+    pace_line = _format_target_pace(envelope) if envelope else None
+    if pace_line:
+        plan_detail.insert(0, pace_line)
     if plan_detail:
         parts.append("Détail du plan (calculé) :\n" + "\n".join(plan_detail))
 
@@ -225,3 +228,32 @@ def _format_plan_hints(plan_hints) -> list[str]:
         elif h.reason:
             lines.append(f"  • {h.reason}")
     return lines
+
+
+_PACE_SOURCE_LABELS = {
+    "race_target_time": "objectif déclaré",
+    "riegel_from_half": "projection Riegel depuis semi récent",
+    "riegel_from_10k": "projection Riegel depuis 10k récent",
+    "vma_only": "VMA seule",
+}
+
+
+def _format_target_pace(envelope) -> str | None:
+    """Same principle as _format_plan_hints: the pace is a computed fact
+    (envelope.target_marathon_pace_min_km), never an LLM restatement."""
+    pace = envelope.target_marathon_pace_min_km
+    if pace is None:
+        return None
+    source_label = _PACE_SOURCE_LABELS.get(
+        envelope.target_marathon_pace_source, envelope.target_marathon_pace_source
+    )
+    return f"  • Allure marathon cible : {_format_pace_min_per_km(pace)}/km ({source_label})"
+
+
+def _format_pace_min_per_km(pace_min_per_km: float) -> str:
+    minutes = int(pace_min_per_km)
+    seconds = round((pace_min_per_km - minutes) * 60)
+    if seconds == 60:
+        minutes += 1
+        seconds = 0
+    return f"{minutes}:{seconds:02d}"
