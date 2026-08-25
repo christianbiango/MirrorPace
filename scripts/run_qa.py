@@ -101,10 +101,23 @@ def main() -> None:
     else:
         profiles = ALL_PROFILES
 
+    # ── Output directory ───────────────────────────────────────────────────────
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    out_dir = Path("data/qa_runs") / timestamp
+    (out_dir / "conversations").mkdir(parents=True, exist_ok=True)
+    (out_dir / "evaluations").mkdir(parents=True, exist_ok=True)
+
     # ── Build CoachAgent ───────────────────────────────────────────────────────
-    profile_store = RunnerProfileStore()
-    if not profile_store.exists():
+    # Simulated personas can trigger the in-conversation profile-correction flow
+    # (that's part of what's being tested) — never let that write to the real
+    # athlete's profile. Read it once, then work on an isolated snapshot scoped
+    # to this run only.
+    real_profile_store = RunnerProfileStore()
+    if not real_profile_store.exists():
         sys.exit("ERROR: data/runner_profile.yaml not found. Fill in athlete profile first.")
+    runner_id, real_profile = real_profile_store.load()
+    profile_store = RunnerProfileStore(path=out_dir / "profile_snapshot.yaml")
+    profile_store.save(runner_id, real_profile)
 
     engine_db = build_engine()
     db_session = build_session(engine_db)
@@ -129,12 +142,6 @@ def main() -> None:
     )
     judge = ConversationJudge(api_key=gemini_key)
     generator = ReportGenerator()
-
-    # ── Output directory ───────────────────────────────────────────────────────
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    out_dir = Path("data/qa_runs") / timestamp
-    (out_dir / "conversations").mkdir(parents=True, exist_ok=True)
-    (out_dir / "evaluations").mkdir(parents=True, exist_ok=True)
 
     print(f"MirrorPace QA Agent")
     print(f"  Conversations : {args.conversations} | Tours max : {args.max_turns}")
